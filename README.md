@@ -1,7 +1,7 @@
 # certscrape
 CITI Certification Scraper
 
-This Python script scans all PDF files in a provided directory, specifically for CITI Training Certifications.
+This Python script scans all PDF files in a provided directory (including subdirectories), specifically for CITI Training Certifications.
 
 It compiles the following information from each CITI Certificate read:
 - CITI Record Number
