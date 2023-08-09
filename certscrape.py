@@ -2,9 +2,11 @@
 import pandas as pd
 import pdfquery
 import os
+from glob import iglob
 
 #Set up lists and directory info
-directory = 'Directory where CITI certificates are stored'
+glob_directory = 'path/**/*'
+directory = [f for f in iglob(glob_directory, recursive = True) if os.path.isfile(f)]
 lst = []
 lst2 = []
 lst3 = []
@@ -13,13 +15,13 @@ lst5 = []
 cols = ['cert_number', 'recipient_name', 'cert_date', 'exp_date', 'group']
 
 
-print('Scanning CITI Certificates in', directory, '\n')
+print('Scanning CITI Certificates', '\n')
 
 #Loop over all CITI Certificates in Directory
-for file in os.listdir(directory):
+for file in directory:
 	if file.endswith(".pdf"):
 		print('\n' 'Scanning', file)
-		with open("{}/{}".format(directory,file), 'rb') as doc:
+		with open(file, 'rb') as doc:
 			certificate = pdfquery.PDFQuery(doc)
 			certificate.load()
 			certificate
