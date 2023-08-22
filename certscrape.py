@@ -9,10 +9,12 @@ glob_directory = 'path/**/*'
 directory = [f for f in iglob(glob_directory, recursive = True) if os.path.isfile(f)]
 lst = []
 lst2 = []
+lst2_a = []
+lst2_b = []
 lst3 = []
 lst4 = []
 lst5 = []
-cols = ['cert_number', 'recipient_name', 'cert_date', 'exp_date', 'group']
+cols = ['cert_number', 'recipient_name', 'name_last', 'name_first', 'cert_date', 'exp_date', 'group']
 
 
 print('Scanning CITI Certificates', '\n')
@@ -54,11 +56,26 @@ for file in directory:
 				recipient_name = certificate.pq('LTTextLineHorizontal:overlaps_bbox("%s, %s, %s, %s")' % (r_x0, r_y0, r_x1, r_y1)).text()
 				recipient_name = recipient_name.replace('This is to certify that:', '').strip()
 				print('This record is for: ', recipient_name)
+				name_split = recipient_name.split()
+				if len(name_split) == 2:
+					name_first = name_split[0].strip()
+					name_last = name_split[1].strip()
+				elif len(name_split) == 3:
+					name_first = name_split[0].strip() + ' ' + name_split[1].strip()
+					name_last = name_split[2].strip()
+				print('First Name: ', name_first)
+				print('Last Name: ', name_last)
 				lst2.append(recipient_name)
+				lst2_a.append(name_first)
+				lst2_b.append(name_last)
 			except IndexError:
 				print('No Recipient Found')
 				recipient_name = 'NA'
+				name_last = 'NA'
+				name_first = 'NA'
 				lst2.append(recipient_name)
+				lst2_b.append(name_last)
+				lst2_a.append(name_first)
 
 			#Searching for Certificate Date
 			try:
@@ -114,7 +131,7 @@ for file in directory:
 
 #Compile to pandas DataFrame and Export
 print('\n','Compiling Data...')
-frame = pd.DataFrame(list(zip(lst, lst2, lst3, lst4, lst5)), columns = cols )
+frame = pd.DataFrame(list(zip(lst, lst2, lst2_b, lst2_a, lst3, lst4, lst5)), columns = cols )
 print('\n', 'Saving to File...')
 framename = "certificates.csv"
 frame.to_csv(framename, header = True, index = False)
