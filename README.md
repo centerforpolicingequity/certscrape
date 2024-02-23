@@ -5,7 +5,7 @@ This Python script scans all PDF files in a provided directory (including subdir
 
 It compiles the following information from each CITI Certificate read, using a certain expected location on the document:
 - CITI Record Number
-- Name of Recipient
+- Name of Recipient (Full, family, and given name)
 - Certification Issue Date
 - Expiration Date
 - Curriculum Group for Certificate (e.g. RCR)
