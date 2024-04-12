@@ -6,12 +6,15 @@
 print('~'* 60)
 print('CITI Employee Search Tool')
 print('Center for Policing Equity OHRP')
-print('v.1.0')
+print('v.1.2')
 print('2024', '\n')
 print('~'*60)
 
 import pandas as pd
-alerts = []
+pd.options.mode.chained_assignment = None
+import datetime as dt
+alerts_missing = []
+alerts_expired = []
 chart = []
 #Import data
 print('Reading Data...')
@@ -42,9 +45,12 @@ missing_employees = all_recipients - current_employees
 print('The following employees may no longer work at CPE:')
 for name in missing_employees:
 	print(name)
-with open('former.txt', 'w') as file:
-	for name in missing_employees:
-		file.write('%s\n' % name)
+if missing_employees:
+	with open('former.txt', 'w') as file:
+		file.write('The following employees may no longer work at CPE as of ' + dt.date.today().strftime("%Y-%m-%d") + '\n')
+		file.write('='*30 + '\n')
+		for name in missing_employees:
+			file.write('%s\n' % name)
 
 current_certs = certs[certs['recipient_name'].isin(current_employees)]
 current_employees = list(current_employees)
@@ -60,10 +66,27 @@ def has_rcr(name):
 	"""Checks if employee currently has RCR Certificate"""
 	return name in current_certs[current_certs['group'] == 'Responsible Conduct of Research (RCR)']['recipient_name'].tolist()
 
+def hsr_expired(val):
+	"""Checks if latest HSR certificates on file are expired"""
+	now = dt.date.today()
+	current_certs['exp_date'] = pd.to_datetime(current_certs['exp_date'], dayfirst = True, format = "%Y-%m-%d")
+	latest_hsr = current_certs[current_certs['group']=='HSR for Social & Behavioral Faculty, Graduate Students & Postdoctoral Scholars'].groupby('recipient_name')['exp_date'].max()
+	latest_hsr = latest_hsr.reset_index()
+	return val in latest_hsr[latest_hsr['exp_date'].dt.date < now]['recipient_name'].tolist()
+
+def rcr_expired(val):
+	"""Checks if latest RCR certificates on file are expired"""
+	now = dt.date.today()
+	current_certs['exp_date'] = pd.to_datetime(current_certs['exp_date'], format = "%Y-%m-%d")
+	latest_rcr = current_certs[current_certs['group']=='Responsible Conduct of Research (RCR)'].groupby('recipient_name')['exp_date'].max()
+	latest_rcr = latest_rcr.reset_index()
+	return val in latest_rcr[latest_rcr['exp_date'].dt.date < now]['recipient_name'].tolist()
+
 ##Check for values
 final_frame['hsr_val'] = final_frame['recipient_name'].apply(has_hsr)
 final_frame['rcr_val'] = final_frame['recipient_name'].apply(has_rcr)
-
+final_frame['hsr_exp'] = final_frame['recipient_name'].apply(hsr_expired)
+final_frame['rcr_exp'] = final_frame['recipient_name'].apply(rcr_expired)
 
 #Results output
 framename= 'citi_records.csv'
@@ -72,25 +95,55 @@ print('Employee CITI Statuses saved to ', framename)
 print('~'*60, '\n')
 print('The Following Employee Entries Need Attention:')
 print('*' * 60)
+print('MISSING CERTIFICATIONS')
+print('*' * 60)
 for index, row in final_frame.iterrows():
-	#Check if current employee
+	#Check if missing certification
 	if row['rcr_val'] == False and row['hsr_val'] == True:
 		print(row['recipient_name'], 'is missing their RCR documentation.')
 		print('-' * 60)
-		alerts.append(row['recipient_name'] + '| RCR')
+		alerts_missing.append(row['recipient_name'] + '| RCR')
 	if row['rcr_val'] == False and row['hsr_val'] == False:
 		print(row['recipient_name'], 'is missing their RCR & HSR documentation.')
 		print('-' * 60)
-		alerts.append(row['recipient_name'] + ' | HSR & RCR')
+		alerts_missing.append(row['recipient_name'] + ' | HSR & RCR')
 	if row['rcr_val'] == True and row['hsr_val'] == False:
 		print(row['recipient_name'], 'is missing their HSR documentation')
 		print('-' * 60)
-		alerts.append(row['recipient_name'] + ' | HSR')
+		alerts_missing.append(row['recipient_name'] + ' | HSR')
 	else:
 		pass
+print('\n')
+print('EXPIRED CERTIFICATIONS')
+print('*'*60) 
 
-if alerts:
+for index, row in final_frame.iterrows():
+	#Check if certification has expired
+	if row['hsr_exp'] == False and row['rcr_exp'] == True:
+		print(row['recipient_name'], 'has an expired RCR certificate.')
+		print('-' * 60)
+		alerts_expired.append(row['recipient_name'] + '| Expired RCR')
+	if row['hsr_exp'] == True and row['rcr_exp'] == True:
+		print(row['recipient_name'], 'has expired RCR & HSR certificates.')
+		print('-' * 60)
+		alerts_expired.append(row['recipient_name'] + ' | Expired HSR & RCR')
+	if row['hsr_exp'] == True and row['rcr_exp'] == False:
+		print(row['recipient_name'], 'has an expired HSR certificate')
+		print('-' * 60)
+		alerts_expired.append(row['recipient_name'] + ' | Expired HSR')
+	else:
+		pass
+print('~'*60, '\n')
+if alerts_missing or alerts_expired:
 	with open('alerts.txt', 'w') as file:
-		for alert in alerts:
+		file.write('='*30)
+		file.write('MISSING CERTIFICATIONS AS OF ' + dt.date.today().strftime("%Y-%m-%d"))
+		file.write('='*30 + '\n')
+		for alert in alerts_missing:
 			file.write('%s\n' % alert)
-	print('Saved as alert.txt')
+		file.write('='*30)
+		file.write('EXPIRED CERTIFICATIONS AS OF ' + dt.date.today().strftime("%Y-%m-%d"))
+		file.write('='*30 + '\n')
+		for alert in alerts_expired:
+			file.write('%s\n' % alert)
+	print('Saved as alerts.txt')
