@@ -19,7 +19,7 @@ chart = []
 #Import data
 print('Reading Data...')
 print('~'*60, '\n')
-certs = pd.read_csv('citi.csv')
+certs = pd.read_csv('citi.csv', encoding = 'utf-8')
 #Fix name issue
 certs['name_first'] = certs['name_first'].str.slice(0,1)+'.'
 certs['recipient_name'] = certs['name_first'].str.upper() + ' ' + certs['name_last'].str.upper()
@@ -69,7 +69,7 @@ def has_rcr(name):
 def hsr_expired(val):
 	"""Checks if latest HSR certificates on file are expired"""
 	now = dt.date.today()
-	current_certs['exp_date'] = pd.to_datetime(current_certs['exp_date'], dayfirst = True, format = "%Y-%m-%d")
+	current_certs['exp_date'] = pd.to_datetime(current_certs['exp_date'], dayfirst = True, format = "%d-%b-%y")
 	latest_hsr = current_certs[current_certs['group']=='HSR for Social & Behavioral Faculty, Graduate Students & Postdoctoral Scholars'].groupby('recipient_name')['exp_date'].max()
 	latest_hsr = latest_hsr.reset_index()
 	return val in latest_hsr[latest_hsr['exp_date'].dt.date < now]['recipient_name'].tolist()
@@ -77,7 +77,7 @@ def hsr_expired(val):
 def rcr_expired(val):
 	"""Checks if latest RCR certificates on file are expired"""
 	now = dt.date.today()
-	current_certs['exp_date'] = pd.to_datetime(current_certs['exp_date'], format = "%Y-%m-%d")
+	current_certs['exp_date'] = pd.to_datetime(current_certs['exp_date'], format = "%d-%b-%y")
 	latest_rcr = current_certs[current_certs['group']=='Responsible Conduct of Research (RCR)'].groupby('recipient_name')['exp_date'].max()
 	latest_rcr = latest_rcr.reset_index()
 	return val in latest_rcr[latest_rcr['exp_date'].dt.date < now]['recipient_name'].tolist()
