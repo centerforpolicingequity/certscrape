@@ -5,7 +5,8 @@ import os
 from glob import iglob
 
 #Set up lists and directory info
-glob_directory = 'path/**/*'
+path = os.getcwd()
+glob_directory = path + '/**/*'
 directory = [f for f in iglob(glob_directory, recursive = True) if os.path.isfile(f)]
 lst = []
 lst2 = []
@@ -17,7 +18,7 @@ lst5 = []
 cols = ['cert_number', 'recipient_name', 'name_last', 'name_first', 'cert_date', 'exp_date', 'group']
 
 
-print('Scanning CITI Certificates', '\n')
+print('\n', 'Scanning CITI Certificates', '\n')
 
 #Loop over all CITI Certificates in Directory
 for file in directory:
@@ -130,10 +131,12 @@ for file in directory:
 
 
 #Compile to pandas DataFrame and Export
-print('\n','Compiling Data...')
+print('\n Compiling Data...')
 frame = pd.DataFrame(list(zip(lst, lst2, lst2_b, lst2_a, lst3, lst4, lst5)), columns = cols )
 print('\n', 'Saving to File...')
-framename = "certificates.csv"
-frame.to_csv(framename, header = True, index = False)
+framename = "citi.csv"
+
+#NOTE: IF you are starting a new dataframe, change header to TRUE.
+frame.to_csv(framename, header = True, mode = 'a', header = False, index = False)
 print('\n', 'CITI Scan Complete!')
 print('\n','Records saved under', framename)
