@@ -98,6 +98,7 @@ if initialize == 'N':
 			return val in latest_hsr[latest_hsr['exp_date'].dt.date < now]['recipient_name'].tolist()
 		except ValueError:
 			print('No Expired HSR')
+			return False
 
 	def rcr_expired(val):
 		"""Checks if latest RCR certificates on file are expired"""
@@ -109,6 +110,7 @@ if initialize == 'N':
 			return val in latest_rcr[latest_rcr['exp_date'].dt.date < now]['recipient_name'].tolist()
 		except ValueError:
 			print('No Expired RCR')
+			return False
 
 
 	### Check for values
