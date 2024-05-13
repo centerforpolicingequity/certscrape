@@ -67,8 +67,10 @@ if initialize == 'N':
 		print('The following employee may no longer work at CPE:', name)
 	if missing_employees:
 		with open('former.txt', 'w') as file:
+			file.write('GENERAL ALERTS')
+			file.write('\n')
 			file.write('The following employees may no longer work at CPE as of ' + dt.date.today().strftime("%Y-%m-%d") + '\n')
-			file.write('='*30 + '\n')
+			file.write('='*60 + '\n')
 			for name in missing_employees:
 				file.write('%s\n' % name)
 
@@ -117,17 +119,18 @@ if initialize == 'N':
 
 	#Apply science team label:
 	final_frame['sci'] = final_frame['recipient_name'].isin(sci_team)
+
+	framename= 'citi_records.csv'
+	final_frame.to_csv(framename, header = True, index = False)
+	print('Employee CITI Statuses saved to ', framename)
+	print('~'*60, '\n')
 ## Yes: Then read the up-to-date records
 else:
-	final_frame = pd.read_csv('citi_records.csv', header = 0, names = ('recipient_name', 'hsr_val', 'rcr_val', 'hsr_exp', 'rcr_exp'))
+	print('Reading Employee CITI Statuses...')
+	final_frame = pd.read_csv('citi_records.csv', header = 0, names = ('recipient_name', 'hsr_val', 'rcr_val', 'hsr_exp', 'rcr_exp', 'sci'))
 
 # Results output
-framename= 'citi_records.csv'
-final_frame.to_csv(framename, header = True, index = False)
-print('Employee CITI Statuses saved to ', framename)
-print('~'*60, '\n')
-print('The Following Employee Entries Need Attention:')
-print('*' * 60)
+print('~' * 60)
 print('MISSING CERTIFICATIONS')
 print('Note: ** indicates that employee is in Science & Technology')
 print('*' * 60)
@@ -135,15 +138,15 @@ for index, row in final_frame.iterrows():
 	## Check if missing certification
 	if row['sci'] == True:
 		if row['rcr_val'] == False and row['hsr_val'] == True:
-			print(row['recipient_name'], 'is missing their RCR documentation**.')
+			print(row['recipient_name'], 'is missing their RCR documentation.**')
 			print('-' * 60)
 			sci_alerts_missing.append(row['recipient_name'] + '| RCR')
 		if row['rcr_val'] == False and row['hsr_val'] == False:
-			print(row['recipient_name'], 'is missing their RCR & HSR documentation**.')
+			print(row['recipient_name'], 'is missing their RCR & HSR documentation.**')
 			print('-' * 60)
 			sci_alerts_missing.append(row['recipient_name'] + ' | HSR & RCR')
 		if row['rcr_val'] == True and row['hsr_val'] == False:
-			print(row['recipient_name'], 'is missing their HSR documentation**')
+			print(row['recipient_name'], 'is missing their HSR documentation.**')
 			print('-' * 60)
 			sci_alerts_missing.append(row['recipient_name'] + ' | HSR')
 		else:
@@ -158,7 +161,7 @@ for index, row in final_frame.iterrows():
 			print('-' * 60)
 			alerts_missing.append(row['recipient_name'] + ' | HSR & RCR')
 		if row['rcr_val'] == True and row['hsr_val'] == False:
-			print(row['recipient_name'], 'is missing their HSR documentation')
+			print(row['recipient_name'], 'is missing their HSR documentation.')
 			print('-' * 60)
 			alerts_missing.append(row['recipient_name'] + ' | HSR')
 		else:
@@ -175,15 +178,15 @@ for index, row in final_frame.iterrows():
 	if row['sci'] == True:
 		## Check if certification has expired
 		if row['hsr_exp'] == False and row['rcr_exp'] == True:
-			print(row['recipient_name'], 'has an expired RCR certificate**.')
+			print(row['recipient_name'], 'has an expired RCR certificate.**')
 			print('-' * 60)
 			sci_alerts_expired.append(row['recipient_name'] + '| Expired RCR')
 		if row['hsr_exp'] == True and row['rcr_exp'] == True:
-			print(row['recipient_name'], 'has expired RCR & HSR certificates**.')
+			print(row['recipient_name'], 'has expired RCR & HSR certificates.**')
 			print('-' * 60)
 			sci_alerts_expired.append(row['recipient_name'] + ' | Expired HSR & RCR')
 		if row['hsr_exp'] == True and row['rcr_exp'] == False:
-			print(row['recipient_name'], 'has an expired HSR certificate**')
+			print(row['recipient_name'], 'has an expired HSR certificate.**')
 			print('-' * 60)
 			sci_alerts_expired.append(row['recipient_name'] + ' | Expired HSR')
 		else:
@@ -199,7 +202,7 @@ for index, row in final_frame.iterrows():
 			print('-' * 60)
 			alerts_expired.append(row['recipient_name'] + ' | Expired HSR & RCR')
 		if row['hsr_exp'] == True and row['rcr_exp'] == False:
-			print(row['recipient_name'], 'has an expired HSR certificate')
+			print(row['recipient_name'], 'has an expired HSR certificate.')
 			print('-' * 60)
 			alerts_expired.append(row['recipient_name'] + ' | Expired HSR') 
 		else:
@@ -210,6 +213,8 @@ print('~'*60, '\n')
 # Write Report
 if alerts_missing or alerts_expired:
 	with open('alerts.txt', 'w') as file:
+		file.write('GENERAL ALERTS')
+		file.write('\n')
 		file.write('='*30)
 		file.write('MISSING CERTIFICATIONS AS OF ' + dt.date.today().strftime("%Y-%m-%d"))
 		file.write('='*30 + '\n')
@@ -223,6 +228,8 @@ if alerts_missing or alerts_expired:
 	print('General Alerts Saved as alerts.txt')
 if sci_alerts_missing or sci_alerts_expired:
 	with open('sci_alerts.txt', 'w') as file:
+		file.write('SCIENCE TEAM ALERTS')
+		file.write('\n')
 		file.write('='*30)
 		file.write('MISSING CERTIFICATIONS AS OF ' + dt.date.today().strftime("%Y-%m-%d"))
 		file.write('='*30 + '\n')
