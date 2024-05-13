@@ -137,6 +137,6 @@ print('\n', 'Saving to File...')
 framename = "citi.csv"
 
 #NOTE: IF you are starting a new dataframe, change header to TRUE.
-frame.to_csv(framename, header = True, mode = 'a', header = False, index = False)
+frame.to_csv(framename, mode = 'a', header = False, index = False)
 print('\n', 'CITI Scan Complete!')
 print('\n','Records saved under', framename)
