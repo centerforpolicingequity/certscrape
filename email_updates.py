@@ -8,21 +8,33 @@ from requests import HTTPError
 
 now = datetime.now() # Current date/time
 message_header = 'FOR CPE IRB' + '\n' + '*'*60 + '\n'
-message_footer = '\n' + 'Sent from CPE Python Script' + '\n' + '*'*60
+message_footer = '*'*60 + '\n' + 'Sent from CPE Python Script' + '\n' + '*'*60
 #Check if alerts are active:
 path = os.getcwd() + '/**/*'
 
 if os.path.isfile('sci_alerts.txt'):
     print('Science Alerts Detected')
-    sci_alerts = open('sci_alerts.txt', 'r')
 else:
-    sci_alerts = 'No Science Team Alerts'
+    with open('sci_alerts.txt', 'w') as file:
+        file.write('No Science Team Alerts')
+        file.close()
+sci_alerts = open('sci_alerts.txt', 'r')
 
 if os.path.isfile('former.txt'):
     print('Employee Changes Detected')
-    former_alerts = open('former.txt', 'r')
 else:
-    former_alerts = "No Other Updates"
+    with open('former.txt', 'w') as file:
+        file.write("No Other Employee Updates")
+        file.close()
+former_alerts = open('former.txt', 'r')
+
+if os.path.isfile('alerts.txt'):
+    print('Key Personnel Alerts Detected')
+else:
+    with open('alerts.txt', 'w') as file:
+        file.write('No Key Personnel Alerts')
+        file.close()
+key_alerts = open('alerts.txt', 'r')
 
 SCOPES = [
         "https://www.googleapis.com/auth/gmail.send"
@@ -31,7 +43,7 @@ flow = InstalledAppFlow.from_client_secrets_file('credentials.json', SCOPES)
 creds = flow.run_local_server(port=0)
 
 service = build('gmail', 'v1', credentials=creds)
-message = MIMEText(message_header + sci_alerts.read() + '\n' + former_alerts.read() + message_footer)
+message = MIMEText(message_header + sci_alerts.read() + '\n' + key_alerts.read() + '\n' + former_alerts.read() + '\n' + message_footer)
 message['to'] = 'CPEIRB@policingequity.org'
 message['subject'] = 'CITI UPDATE:' + ' ' + now.strftime("%m - %d - %Y")
 create_message = {'raw': base64.urlsafe_b64encode(message.as_string().encode('UTF-8')).decode('ascii')}

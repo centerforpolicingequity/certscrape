@@ -18,6 +18,7 @@ alerts_missing = []
 alerts_expired = []
 chart = []
 sci_team = []
+key_personnel = []
 sci_alerts_missing = []
 sci_alerts_expired = []
 #Import data
@@ -37,6 +38,15 @@ with open('science_team.list', 'r') as sci:
 			sci_team.append(line.strip('\n'))
 	except FileNotFoundError:
 		print('Science Team list not found, please check directory.')
+		sys.exit(2)
+
+#Import Key Personnel
+with open('key_personnel.list', 'r') as list:
+	try:
+		for line in list:
+			key_personnel.append(line.strip('\n'))
+	except FileNotFoundError:
+		print('Key Personnel list not found, please check directory.')
 		sys.exit(2)
 
 
@@ -75,7 +85,6 @@ if initialize == 'N':
 				file.write('%s\n' % name)
 
 	current_certs = certs[certs['recipient_name'].isin(current_employees)]
-	current_employees = list(current_employees)
 	final_frame= pd.DataFrame(current_employees, columns = ['recipient_name'])
 
 	### Search
@@ -122,6 +131,9 @@ if initialize == 'N':
 	#Apply science team label:
 	final_frame['sci'] = final_frame['recipient_name'].isin(sci_team)
 
+	#Apply key personnel label:
+	final_frame['key_pers'] = final_frame['recipient_name'].isin(key_personnel)
+
 	framename= 'citi_records.csv'
 	final_frame.to_csv(framename, header = True, index = False)
 	print('Employee CITI Statuses saved to ', framename)
@@ -129,7 +141,7 @@ if initialize == 'N':
 ## Yes: Then read the up-to-date records
 else:
 	print('Reading Employee CITI Statuses...')
-	final_frame = pd.read_csv('citi_records.csv', header = 0, names = ('recipient_name', 'hsr_val', 'rcr_val', 'hsr_exp', 'rcr_exp', 'sci'))
+	final_frame = pd.read_csv('citi_records.csv', header = 0, names = ('recipient_name', 'hsr_val', 'rcr_val', 'hsr_exp', 'rcr_exp', 'sci', 'key_pers'))
 
 # Results output
 print('~' * 60)
@@ -153,17 +165,17 @@ for index, row in final_frame.iterrows():
 			sci_alerts_missing.append(row['recipient_name'] + ' | HSR')
 		else:
 			pass
-	if row['sci'] == False:
+	if row['sci'] == False and row['key_pers'] == True:
 		if row['rcr_val'] == False and row['hsr_val'] == True:
-			print(row['recipient_name'], 'is missing their RCR documentation.')
+			print(row['recipient_name'], 'is listed as key personnel and is missing their RCR documentation.')
 			print('-' * 60)
 			alerts_missing.append(row['recipient_name'] + '| RCR')
 		if row['rcr_val'] == False and row['hsr_val'] == False:
-			print(row['recipient_name'], 'is missing their RCR & HSR documentation.')
+			print(row['recipient_name'], 'is listed as key personnel and is missing their RCR & HSR documentation.')
 			print('-' * 60)
 			alerts_missing.append(row['recipient_name'] + ' | HSR & RCR')
 		if row['rcr_val'] == True and row['hsr_val'] == False:
-			print(row['recipient_name'], 'is missing their HSR documentation.')
+			print(row['recipient_name'], 'is listed as key personnel and is missing their HSR documentation.')
 			print('-' * 60)
 			alerts_missing.append(row['recipient_name'] + ' | HSR')
 		else:
@@ -193,7 +205,7 @@ for index, row in final_frame.iterrows():
 			sci_alerts_expired.append(row['recipient_name'] + ' | Expired HSR')
 		else:
 			pass
-	if row['sci'] == False:
+	if row['sci'] == False and row['key_pers'] == True:
 		## Check if certification has expired
 		if row['hsr_exp'] == False and row['rcr_exp'] == True:
 			print(row['recipient_name'], 'has an expired RCR certificate.')
@@ -215,7 +227,7 @@ print('~'*60, '\n')
 # Write Report
 if alerts_missing or alerts_expired:
 	with open('alerts.txt', 'w') as file:
-		file.write('GENERAL ALERTS')
+		file.write('KEY PERSONNEL ALERTS')
 		file.write('\n')
 		file.write('='*30)
 		file.write('MISSING CERTIFICATIONS AS OF ' + dt.date.today().strftime("%Y-%m-%d"))
