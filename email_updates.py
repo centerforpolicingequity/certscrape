@@ -1,3 +1,15 @@
+#CITI Email Updater
+#Jonathan A. LLoyd, Research Associate
+#Center for Policing Equity
+#Last Updated: May 20 2024
+
+print('~'* 60)
+print('CITI Email Updater')
+print('Center for Policing Equity OHRP')
+print('v.1.5')
+print('2024', '\n')
+print('~'*60)
+
 import base64
 import os.path
 from datetime import datetime

@@ -1,12 +1,12 @@
 #CITI Employee Search
 #Jonathan A. LLoyd, Research Associate
 #Center for Policing Equity
-#Last Updated: April 23 2024
+#Last Updated: May 20 2024
 
 print('~'* 60)
 print('CITI Employee Search Tool')
 print('Center for Policing Equity OHRP')
-print('v.1.2')
+print('v.1.5')
 print('2024', '\n')
 print('~'*60)
 
@@ -229,29 +229,33 @@ if alerts_missing or alerts_expired:
 	with open('alerts.txt', 'w') as file:
 		file.write('KEY PERSONNEL ALERTS')
 		file.write('\n')
-		file.write('='*30)
+		file.write('='*60)
 		file.write('MISSING CERTIFICATIONS AS OF ' + dt.date.today().strftime("%Y-%m-%d"))
-		file.write('='*30 + '\n')
+		file.write('='*60 + '\n')
 		for alert in alerts_missing:
 			file.write('%s\n' % alert)
-		file.write('='*30)
+		file.write('='*60)
 		file.write('EXPIRED CERTIFICATIONS AS OF ' + dt.date.today().strftime("%Y-%m-%d"))
-		file.write('='*30 + '\n')
+		file.write('='*60 + '\n')
 		for alert in alerts_expired:
 			file.write('%s\n' % alert)
-	print('General Alerts Saved as alerts.txt')
+	print('Key Personnel Alerts Saved as alerts.txt')
+else:
+	print('No Key Personnel Alerts')
 if sci_alerts_missing or sci_alerts_expired:
 	with open('sci_alerts.txt', 'w') as file:
 		file.write('SCIENCE TEAM ALERTS')
 		file.write('\n')
-		file.write('='*30)
+		file.write('='*60)
 		file.write('MISSING CERTIFICATIONS AS OF ' + dt.date.today().strftime("%Y-%m-%d"))
-		file.write('='*30 + '\n')
+		file.write('='*60 + '\n')
 		for alert in sci_alerts_missing:
 			file.write('%s\n' % alert)
-		file.write('='*30)
+		file.write('='*60)
 		file.write('EXPIRED CERTIFICATIONS AS OF ' + dt.date.today().strftime("%Y-%m-%d"))
-		file.write('='*30 + '\n')
+		file.write('='*60 + '\n')
 		for alert in sci_alerts_expired:
 			file.write('%s\n' % alert)
 	print('Science Team Alerts Saved as sci_alerts.txt')
+else:
+	print('No Science Team Alerts')
