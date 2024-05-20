@@ -1,12 +1,12 @@
 #CITI Employee Search
 #Jonathan A. LLoyd, Research Associate
 #Center for Policing Equity
-#Last Updated: April 23 2024
+#Last Updated: May 20 2024
 
 print('~'* 60)
 print('CITI Employee Search Tool')
 print('Center for Policing Equity OHRP')
-print('v.1.2')
+print('v.1.5')
 print('2024', '\n')
 print('~'*60)
 
@@ -18,6 +18,7 @@ alerts_missing = []
 alerts_expired = []
 chart = []
 sci_team = []
+key_personnel = []
 sci_alerts_missing = []
 sci_alerts_expired = []
 #Import data
@@ -37,6 +38,15 @@ with open('science_team.list', 'r') as sci:
 			sci_team.append(line.strip('\n'))
 	except FileNotFoundError:
 		print('Science Team list not found, please check directory.')
+		sys.exit(2)
+
+#Import Key Personnel
+with open('key_personnel.list', 'r') as list:
+	try:
+		for line in list:
+			key_personnel.append(line.strip('\n'))
+	except FileNotFoundError:
+		print('Key Personnel list not found, please check directory.')
 		sys.exit(2)
 
 
@@ -75,7 +85,6 @@ if initialize == 'N':
 				file.write('%s\n' % name)
 
 	current_certs = certs[certs['recipient_name'].isin(current_employees)]
-	current_employees = list(current_employees)
 	final_frame= pd.DataFrame(current_employees, columns = ['recipient_name'])
 
 	### Search
@@ -122,6 +131,9 @@ if initialize == 'N':
 	#Apply science team label:
 	final_frame['sci'] = final_frame['recipient_name'].isin(sci_team)
 
+	#Apply key personnel label:
+	final_frame['key_pers'] = final_frame['recipient_name'].isin(key_personnel)
+
 	framename= 'citi_records.csv'
 	final_frame.to_csv(framename, header = True, index = False)
 	print('Employee CITI Statuses saved to ', framename)
@@ -129,7 +141,7 @@ if initialize == 'N':
 ## Yes: Then read the up-to-date records
 else:
 	print('Reading Employee CITI Statuses...')
-	final_frame = pd.read_csv('citi_records.csv', header = 0, names = ('recipient_name', 'hsr_val', 'rcr_val', 'hsr_exp', 'rcr_exp', 'sci'))
+	final_frame = pd.read_csv('citi_records.csv', header = 0, names = ('recipient_name', 'hsr_val', 'rcr_val', 'hsr_exp', 'rcr_exp', 'sci', 'key_pers'))
 
 # Results output
 print('~' * 60)
@@ -153,17 +165,17 @@ for index, row in final_frame.iterrows():
 			sci_alerts_missing.append(row['recipient_name'] + ' | HSR')
 		else:
 			pass
-	if row['sci'] == False:
+	if row['sci'] == False and row['key_pers'] == True:
 		if row['rcr_val'] == False and row['hsr_val'] == True:
-			print(row['recipient_name'], 'is missing their RCR documentation.')
+			print(row['recipient_name'], 'is listed as key personnel and is missing their RCR documentation.')
 			print('-' * 60)
 			alerts_missing.append(row['recipient_name'] + '| RCR')
 		if row['rcr_val'] == False and row['hsr_val'] == False:
-			print(row['recipient_name'], 'is missing their RCR & HSR documentation.')
+			print(row['recipient_name'], 'is listed as key personnel and is missing their RCR & HSR documentation.')
 			print('-' * 60)
 			alerts_missing.append(row['recipient_name'] + ' | HSR & RCR')
 		if row['rcr_val'] == True and row['hsr_val'] == False:
-			print(row['recipient_name'], 'is missing their HSR documentation.')
+			print(row['recipient_name'], 'is listed as key personnel and is missing their HSR documentation.')
 			print('-' * 60)
 			alerts_missing.append(row['recipient_name'] + ' | HSR')
 		else:
@@ -193,7 +205,7 @@ for index, row in final_frame.iterrows():
 			sci_alerts_expired.append(row['recipient_name'] + ' | Expired HSR')
 		else:
 			pass
-	if row['sci'] == False:
+	if row['sci'] == False and row['key_pers'] == True:
 		## Check if certification has expired
 		if row['hsr_exp'] == False and row['rcr_exp'] == True:
 			print(row['recipient_name'], 'has an expired RCR certificate.')
@@ -215,31 +227,35 @@ print('~'*60, '\n')
 # Write Report
 if alerts_missing or alerts_expired:
 	with open('alerts.txt', 'w') as file:
-		file.write('GENERAL ALERTS')
+		file.write('KEY PERSONNEL ALERTS')
 		file.write('\n')
-		file.write('='*30)
+		file.write('='*60)
 		file.write('MISSING CERTIFICATIONS AS OF ' + dt.date.today().strftime("%Y-%m-%d"))
-		file.write('='*30 + '\n')
+		file.write('='*60 + '\n')
 		for alert in alerts_missing:
 			file.write('%s\n' % alert)
-		file.write('='*30)
+		file.write('='*60)
 		file.write('EXPIRED CERTIFICATIONS AS OF ' + dt.date.today().strftime("%Y-%m-%d"))
-		file.write('='*30 + '\n')
+		file.write('='*60 + '\n')
 		for alert in alerts_expired:
 			file.write('%s\n' % alert)
-	print('General Alerts Saved as alerts.txt')
+	print('Key Personnel Alerts Saved as alerts.txt')
+else:
+	print('No Key Personnel Alerts')
 if sci_alerts_missing or sci_alerts_expired:
 	with open('sci_alerts.txt', 'w') as file:
 		file.write('SCIENCE TEAM ALERTS')
 		file.write('\n')
-		file.write('='*30)
+		file.write('='*60)
 		file.write('MISSING CERTIFICATIONS AS OF ' + dt.date.today().strftime("%Y-%m-%d"))
-		file.write('='*30 + '\n')
+		file.write('='*60 + '\n')
 		for alert in sci_alerts_missing:
 			file.write('%s\n' % alert)
-		file.write('='*30)
+		file.write('='*60)
 		file.write('EXPIRED CERTIFICATIONS AS OF ' + dt.date.today().strftime("%Y-%m-%d"))
-		file.write('='*30 + '\n')
+		file.write('='*60 + '\n')
 		for alert in sci_alerts_expired:
 			file.write('%s\n' % alert)
 	print('Science Team Alerts Saved as sci_alerts.txt')
+else:
+	print('No Science Team Alerts')
