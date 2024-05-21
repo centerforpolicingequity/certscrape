@@ -1,12 +1,12 @@
 #CITI Certificate Scraper
 #Jonathan A. LLoyd, Research Associate
 #Center for Policing Equity
-#Last Updated: May 20 2024
+#Last Updated: May 21 2024
 
 print('~'* 60)
 print('CITI Certificate Scraper')
 print('Center for Policing Equity OHRP')
-print('v.1.5')
+print('v.1.6')
 print('2024', '\n')
 print('~'*60)
 
@@ -29,6 +29,11 @@ lst4 = []
 lst5 = []
 cols = ['cert_number', 'recipient_name', 'name_last', 'name_first', 'cert_date', 'exp_date', 'group']
 
+new_file = input('Is this for a new CITI Certificate Table? (Y/N): ')
+if new_file == 'Y':
+	header_select = True
+else:
+	header_select = False
 
 print('\n', 'Scanning CITI Certificates', '\n')
 
@@ -149,6 +154,6 @@ print('\n', 'Saving to File...')
 framename = "citi.csv"
 
 #NOTE: IF you are starting a new dataframe, change header to TRUE.
-frame.to_csv(framename, mode = 'a', header = False, index = False)
+frame.to_csv(framename, mode = 'a', header = header_select, index = False)
 print('\n', 'CITI Scan Complete!')
 print('\n','Records saved under', framename)
