@@ -1,6 +1,7 @@
 #CITI Certificate Scraper
 #Jonathan A. LLoyd, Research Associate
 #Center for Policing Equity
+
 #Last Updated: June 7 2024
 
 def citi_cert_scan():
@@ -11,6 +12,7 @@ def citi_cert_scan():
 	print('v.1.6')
 	print('2024', '\n')
 	print('~'*60)
+
 
 	#Import packages
 	import pandas as pd
@@ -31,12 +33,12 @@ def citi_cert_scan():
 	lst5 = []
 	cols = ['cert_number', 'recipient_name', 'name_last', 'name_first', 'cert_date', 'exp_date', 'group']
 
+
 	new_file = input('Is this for a new CITI Certificate Table? (Y/N): ')
 	if new_file == 'Y':
 		header_select = True
 	else:
 		header_select = False
-
 	print('\n', 'Scanning CITI Certificates', '\n')
 
 #Loop over all CITI Certificates in Directory
