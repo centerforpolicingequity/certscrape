@@ -262,7 +262,7 @@ def update_citi_statuses():
 	else:
 		print('No Science Team Alerts')
 
-if __name__ == '__main':
+if __name__ == '__main__':
 	print('Running CITI Status Update standalone...')
 	update_citi_statuses()
 else:

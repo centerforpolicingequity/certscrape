@@ -69,7 +69,7 @@ def email_update():
         print(F'An error occurred: {error}')
         message = None
 
-if __name__ == '__main':
+if __name__ == '__main__':
     print('Running CITI Email standalone...')
     email_update()
 
