@@ -160,11 +160,9 @@ def citi_cert_scan():
 	print('\n', 'CITI Scan Complete!')
 	print('\n','Records saved under', framename)
 
-
-if __name__ == '__main':
+if __name__ == '__main__':
 	print('Running CITI Scan standalone...')
 	citi_cert_scan()
 
 else:
 	print('Citi Certification Imported...')
-
