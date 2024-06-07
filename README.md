@@ -1,6 +1,4 @@
-# certscrape
-CITI Update Center
-
+# CITI Update Center
 
 
 This Python script scans all PDF files in a provided directory (including subdirectories), specifically for CITI Training Certifications. It can also keep an up-to-date log of all CITI certifications held by current employees and those listed as key personnel on CPE projects.
