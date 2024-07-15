@@ -175,23 +175,36 @@ def sel():
 
 
 		for index, row in final_frame.iterrows():
+			exp_num = 0
 			if row['sci'] == True:
 				## Check if certification has expired
 				if row['hsr_exp'] == False and row['rcr_exp'] == True:
 					sci_alerts_expired.append(row['recipient_name'] + '| Expired RCR')
+					expired_info.insert(exp_num, row['recipient_name'] + ' has an expired RCR certificate. (Science)')
+					exp_num = exp_num + 1
 				if row['hsr_exp'] == True and row['rcr_exp'] == True:
 					sci_alerts_expired.append(row['recipient_name'] + ' | Expired HSR & RCR')
+					expired_info.insert(exp_num, row['recipient_name'] + ' has expired RCR & HSR certificates. (Science)')
+					exp_num = exp_num + 1
 				if row['hsr_exp'] == True and row['rcr_exp'] == False:
+					expired_info.insert(exp_num, row['recipient_name'] + ' has an expired HSR certificate. (Science)')
+					exp_num = exp_num + 1
 					sci_alerts_expired.append(row['recipient_name'] + ' | Expired HSR')
 				else:
 					pass
 			if row['sci'] == False and row['key_pers'] == True:
 				## Check if certification has expired
 				if row['hsr_exp'] == False and row['rcr_exp'] == True:
+					expired_info.insert(exp_num, row['recipient_name'] + ' has an expired RCR certificate. (Key Personnel)')
+					exp_num = exp_num + 1
 					alerts_expired.append(row['recipient_name'] + '| Expired RCR')
 				if row['hsr_exp'] == True and row['rcr_exp'] == True:
+					expired_info.insert(exp_num, row['recipient_name'] + ' has expired RCR & HSR certificates. (Key Personnel)')
+					exp_num = exp_num + 1
 					alerts_expired.append(row['recipient_name'] + ' | Expired HSR & RCR')
 				if row['hsr_exp'] == True and row['rcr_exp'] == False:
+					expired_info.insert(exp_num, row['recipient_name'] + ' has an expired HSR certificate. (Key Personnel)')
+					exp_num = exp_num + 1
 					alerts_expired.append(row['recipient_name'] + ' | Expired HSR') 
 				else:
 					pass
@@ -244,33 +257,48 @@ def exit_command():
 	scan_window.destroy()
 
 def scan_app():
+	#Main window
 	global scan_window
 	scan_window= tk.Tk()
 	scan_window.configure(background = "white")
-	scan_window.geometry('700x500')
+	scan_window.geometry('1000x1000')
 	scan_window.title('CITI Employee Search Tool')
+	#Missing Info
 	scan_app_info = tk.Label(scan_window, text = 'CITI Employee Search Tool \n Center for Policing Equity OHRP \n v.1.7 \n', width = 100, height = 4, bg = 'green', fg = 'white')
 	frm_missing = tk.Frame(scan_window, relief = 'sunken', width = 100)
 	missing_head = tk.Label(frm_missing, text = 'MISSING CERTIFICATIONS', width = 100, height = 4, bg = "black", fg = "white")
 	global missing_info
-	missing_info = tk.Listbox(frm_missing, bg = "black", fg = 'green', width = 100)
+	missing_info = tk.Listbox(frm_missing, bg = "navy", fg = 'white', width = 100)
+	#Expired Info
+	frm_expired = tk.Frame(scan_window, relief = 'sunken', width = 100)
+	expired_head = tk.Label(frm_expired, text = 'EXPIRED CERTIFICATIONS', width = 100, height = 4, bg = "white", fg = "red")
+	global expired_info
+	expired_info = tk.Listbox(frm_expired, bg = "yellow", fg = "black", width = 100)
+	#Main Window display
 	global initialize
 	initialize = tk.StringVar()
-	label_app = tk.Label(scan_window, text = 'Is there already an up-to-date copy of citi_records.csv?', width = 100, height = 4, bg = "black", fg = "white")
+	label_app = tk.Label(scan_window, text = 'Is there already an up-to-date copy of citi_records.csv?', width = 100, height = 4, bg = "white", fg = "black")
 	label_app.grid(column = 1, row = 2)
-	first_time_yes = tk.Radiobutton(frm_missing, text = "Yes", fg = "black", variable = initialize, value = 'Y', command = sel)
-	first_time_no = tk.Radiobutton(frm_missing, text = "No", fg = "black", variable = initialize, value = 'N', command = sel)
+	first_time_yes = tk.Radiobutton(frm_missing, text = "Yes", fg = "black", variable = initialize, value = 'Y')
+	first_time_no = tk.Radiobutton(frm_missing, text = "No", fg = "black", variable = initialize, value = 'N')
+	confirm = tk.Button(scan_window, text = 'OK', command = sel)
 	first_time_yes.pack()
 	first_time_no.pack()
+	#Missing Window Display
 	missing_head.pack(side = 'top')
 	missing_info.pack(side = 'bottom')
 	label = tk.Label()
-	frm_missing.grid(row=3, column = 1)
+	frm_missing.grid(row=4, column = 1)
+	#Expired Window Display
+	expired_head.pack(side = 'top')
+	expired_info.pack(side = 'bottom')
+	frm_expired.grid(row = 5, column = 1)
+	#Splash and Exit
 	scan_app_info.grid(row = 1, column = 1)
+	confirm.grid(row = 3, column = 1)
 	exit_button = tk.Button(scan_window, text = 'Exit', width = 75, command = exit_command)
-	exit_button.grid(row = 4, column = 1)
+	exit_button.grid(row = 6, column = 1)
 	scan_window.mainloop()
-
 #Run
 if __name__ == '__main__':
 	scan_app()
