@@ -2,16 +2,10 @@
 #Jonathan A. LLoyd, Research Associate
 #Center for Policing Equity
 #Last Updated: May 20 2024
+from tkinter import messagebox
 
 def email_update():
     """Emails updates to CPE OHRP"""
-    print('~'* 60)
-    print('CITI Email Updater')
-    print('Center for Policing Equity OHRP')
-    print('v.1.5')
-    print('2024', '\n')
-    print('~'*60)
-
     import base64
     import os.path
     from datetime import datetime
@@ -21,13 +15,13 @@ def email_update():
     from requests import HTTPError
 
     now = datetime.now() # Current date/time
-    message_header = 'FOR CPE IRB' + '\n' + '*'*60 + '\n'
-    message_footer = '*'*60 + '\n' + 'Sent from CPE Python Script' + '\n' + '*'*60
+    message_header = 'For the Office of Human Research Protection:' + '\n' + '*'*60 + '\n'
+    message_footer = '*'*60 + '\n' + 'Sent from CITI Email Updater' + '\n' + '*'*60
     #Check if alerts are active:
     path = os.getcwd() + '/**/*'
 
     if os.path.isfile('sci_alerts.txt'):
-        print('Science Alerts Detected')
+        messagebox.showinfo('Check 1/3', 'Science Alerts Detected')
     else:
         with open('sci_alerts.txt', 'w') as file:
             file.write('No Science Team Alerts')
@@ -35,7 +29,7 @@ def email_update():
     sci_alerts = open('sci_alerts.txt', 'r')
 
     if os.path.isfile('former.txt'):
-        print('Employee Changes Detected')
+        messagebox.showinfo('Check 2/3', 'Employee Changes Detected')
     else:
         with open('former.txt', 'w') as file:
             file.write("No Other Employee Updates")
@@ -43,7 +37,7 @@ def email_update():
     former_alerts = open('former.txt', 'r')
 
     if os.path.isfile('alerts.txt'):
-        print('Key Personnel Alerts Detected')
+        messagebox.showinfo('Check 3/3','Key Personnel Alerts Detected')
     else:
         with open('alerts.txt', 'w') as file:
             file.write('No Key Personnel Alerts')
@@ -64,14 +58,10 @@ def email_update():
 
     try:
         message = (service.users().messages().send(userId="me", body=create_message).execute())
-        print('Successfully sent message.')
+        messagebox.showinfo('Successfully sent message.')
     except HTTPError as error:
-        print(F'An error occurred: {error}')
+        messagebox.showerror(F'An error occurred: {error}')
         message = None
 
 if __name__ == '__main__':
-    print('Running CITI Email standalone...')
     email_update()
-
-else:
-    print('CITI Email Imported...')

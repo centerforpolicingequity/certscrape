@@ -17,7 +17,8 @@ def option_2():
 	scan_citi_files.scan_app()
 
 def option_3():
-	email_updates.app()
+	messagebox.showinfo('Running Checks...')
+	email_updates.email_update()
 
 def option_4():
 	messagebox.showinfo(title = 'Quitting', message = 'Thank you. Goodbye.')
