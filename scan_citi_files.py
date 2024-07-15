@@ -243,7 +243,7 @@ def sel():
 def exit_command():
 	scan_window.destroy()
 
-def app():
+def scan_app():
 	global scan_window
 	scan_window= tk.Tk()
 	scan_window.configure(background = "white")
@@ -273,4 +273,4 @@ def app():
 
 #Run
 if __name__ == '__main__':
-	app()
+	scan_app()
