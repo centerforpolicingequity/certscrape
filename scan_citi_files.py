@@ -244,11 +244,13 @@ def exit_command():
 	scan_window.destroy()
 
 def scan_app():
+	#Main window
 	global scan_window
 	scan_window= tk.Tk()
 	scan_window.configure(background = "white")
 	scan_window.geometry('700x500')
 	scan_window.title('CITI Employee Search Tool')
+	#Missing Info Display
 	scan_app_info = tk.Label(scan_window, text = 'CITI Employee Search Tool \n Center for Policing Equity OHRP \n v.1.7 \n', width = 100, height = 4, bg = 'green', fg = 'white')
 	frm_missing = tk.Frame(scan_window, relief = 'sunken', width = 100)
 	missing_head = tk.Label(frm_missing, text = 'MISSING CERTIFICATIONS', width = 100, height = 4, bg = "black", fg = "white")
@@ -258,10 +260,12 @@ def scan_app():
 	initialize = tk.StringVar()
 	label_app = tk.Label(scan_window, text = 'Is there already an up-to-date copy of citi_records.csv?', width = 100, height = 4, bg = "black", fg = "white")
 	label_app.grid(column = 1, row = 2)
-	first_time_yes = tk.Radiobutton(frm_missing, text = "Yes", fg = "black", variable = initialize, value = 'Y', command = sel)
-	first_time_no = tk.Radiobutton(frm_missing, text = "No", fg = "black", variable = initialize, value = 'N', command = sel)
+	first_time_yes = tk.Radiobutton(frm_missing, text = "Yes", fg = "black", variable = initialize, value = 'Y')
+	first_time_no = tk.Radiobutton(frm_missing, text = "No", fg = "black", variable = initialize, value = 'N')
+	confirm = tk.Button(frm_missing, text = 'OK', command = sel)
 	first_time_yes.pack()
 	first_time_no.pack()
+	confirm.pack(side = 'bottom')
 	missing_head.pack(side = 'top')
 	missing_info.pack(side = 'bottom')
 	label = tk.Label()
