@@ -21,38 +21,39 @@ sci_alerts_missing = []
 sci_alerts_expired = []
 
 
-#Import data
-try:
-	certs = pd.read_csv('citi.csv', encoding = 'utf-8')
-	#Fix name issue
-	certs['name_first'] = certs['name_first'].str.slice(0,1)+'.'
-	certs['recipient_name'] = certs['name_first'].str.upper() + ' ' + certs['name_last'].str.upper()
-except FileNotFoundError:
-	messagebox.showerror(title = 'Missing Certificates', message = 'Error: Cannot Find CITI certificates file (citi.csv), please check directory.')
-	sys.exit(0)
-
-#Import Science Team Members
-try:
-	with open('science_team.list', 'r') as sci:
-		for line in sci:
-			sci_team.append(line.strip('\n'))
-except FileNotFoundError:
-	messagebox.showerror(title = 'Missing Science', message = 'Error: Science Team list not found, please check directory.')
-	sys.exit(0)
-
-#Import Key Personnel
-try:
-	with open('key_personnel.list', 'r') as list:
-		for line in list:
-			key_personnel.append(line.strip('\n'))
-except FileNotFoundError:
-	messagebox.showerror(title = 'Missing KP', message = 'Error: Key Personnel list not found, please check directory.')
-	sys.exit(0)
 
 def sel():
 		"""Runs a scan of CITI Certificates after being selected by radio button"""
 		global selection
+		global certs
 		selection = str(initialize.get())
+		#Import data
+		try:
+			certs = pd.read_csv('citi.csv', encoding = 'utf-8')
+			#Fix name issue
+			certs['name_first'] = certs['name_first'].str.slice(0,1)+'.'
+			certs['recipient_name'] = certs['name_first'].str.upper() + ' ' + certs['name_last'].str.upper()
+		except FileNotFoundError:
+			messagebox.showerror(title = 'Missing Certificates', message = 'Error: Cannot Find CITI certificates file (citi.csv), please check directory.')
+			sys.exit(0)
+
+		#Import Science Team Members
+		try:
+			with open('science_team.list', 'r') as sci:
+				for line in sci:
+					sci_team.append(line.strip('\n'))
+		except FileNotFoundError:
+			messagebox.showerror(title = 'Missing Science', message = 'Error: Science Team list not found, please check directory.')
+			sys.exit(0)
+
+		#Import Key Personnel
+		try:
+			with open('key_personnel.list', 'r') as list:
+				for line in list:
+					key_personnel.append(line.strip('\n'))
+		except FileNotFoundError:
+			messagebox.showerror(title = 'Missing KP', message = 'Error: Key Personnel list not found, please check directory.')
+			sys.exit(0)
 		## No, then run a scan of all the data:
 		if selection == 'N':
 			### Adjusting Names
@@ -276,7 +277,7 @@ def scan_app():
 	expired_info = tk.Listbox(frm_expired, bg = "yellow", fg = "black", width = 100)
 	#Main Window display
 	global initialize
-	initialize = tk.StringVar()
+	initialize = tk.StringVar(scan_window, value = 'None')
 	label_app = tk.Label(scan_window, text = 'Is there already an up-to-date copy of citi_records.csv?', width = 100, height = 4, bg = "white", fg = "black")
 	label_app.grid(column = 1, row = 2)
 	first_time_yes = tk.Radiobutton(frm_missing, text = "Yes", fg = "black", variable = initialize, value = 'Y')

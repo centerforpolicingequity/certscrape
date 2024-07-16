@@ -9,7 +9,6 @@ import os
 from glob import iglob
 import tkinter as tk
 from tkinter import messagebox
-global new_file
 
 def citi_cert_scan():
 	"""Scans for CITI Certificates"""
@@ -17,6 +16,7 @@ def citi_cert_scan():
 	path = os.getcwd()
 	glob_directory = path + '/**/*'
 	directory = [f for f in iglob(glob_directory, recursive = True) if os.path.isfile(f)]
+	global lst, lst2, lst2_a, lst2_b, lst3, lst4, lst5, cols
 	lst = []
 	lst2 = []
 	lst2_a = []
@@ -26,10 +26,12 @@ def citi_cert_scan():
 	lst5 = []
 	cols = ['cert_number', 'recipient_name', 'name_last', 'name_first', 'cert_date', 'exp_date', 'group']
 	num = 0
-	new_file = str(new_input.get())
-	if new_file == 'Y':
+	global new_file
+	new_file = new_input.get()
+	header_select = []
+	if new_file == 'Yes':
 		header_select = True
-	else:
+	elif new_file == 'No':
 		header_select = False
 
 #Loop over all CITI Certificates in Directory
@@ -179,9 +181,9 @@ def cert_app():
 	input_frame = tk.Frame(cert_window, relief = 'sunken', width = 100)
 	input_frame.grid(row = 2, column = 1)
 	global new_input
-	new_input = tk.StringVar()
-	new_input_yes = tk.Radiobutton(input_frame, text = "Yes", fg = "black", variable = new_input, value = 'Y')
-	new_input_no = tk.Radiobutton(input_frame, text = "No", fg = "black", variable = new_input, value = 'N')
+	new_input = tk.StringVar(input_frame, value = 'None')
+	new_input_yes = tk.Radiobutton(input_frame, text = "Yes", fg = "black", variable = new_input, value = 'Yes')
+	new_input_no = tk.Radiobutton(input_frame, text = "No", fg = "black", variable = new_input, value = 'No')
 	confirm = tk.Button(input_frame, text = 'OK', command = citi_cert_scan)
 	new_input_yes.pack()
 	new_input_no.pack()
