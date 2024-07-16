@@ -58,9 +58,9 @@ def email_update():
 
     try:
         message = (service.users().messages().send(userId="me", body=create_message).execute())
-        messagebox.showinfo('Successfully sent message.')
-    except HTTPError as error:
-        messagebox.showerror(F'An error occurred: {error}')
+        messagebox.showinfo('Success', 'Successfully sent message.')
+    except Exception:
+        messagebox.showerror('Error','An error occurred. Check logs.')
         message = None
 
 if __name__ == '__main__':

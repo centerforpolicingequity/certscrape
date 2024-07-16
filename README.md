@@ -1,10 +1,12 @@
 # CITI Update Center
 
 
-This Python script scans all PDF files in a provided directory (including subdirectories), specifically for CITI Training Certifications. It can also keep an up-to-date log of all CITI certifications held by current employees and those listed as key personnel on CPE projects.
+This Python script scans all PDF files in a provided directory (including subdirectories), specifically for CITI Training Certifications. It can also keep an up-to-date log of all CITI certifications held by current employees and those listed as key personnel on CPE projects. 
 
-__main__.py:
-Runs the main menu for the CITI Update Center. From here, a user can select one of four options: Scan CITI Certificates, Update CITI Status, Email the Weekly Update to the CPE OHRP Email, or exit.
+*NEW* GUI Added!
+
+app.py:
+Runs the main GUI for the CITI Update Center. From here, a user can select one of four options: Scan CITI Certificates, Update CITI Status, Email the Weekly Update to the CPE OHRP Email, or exit.
 
 cert.py:
 Compiles the following information from each CITI Certificate read, using a certain expected location on the document:
@@ -37,6 +39,7 @@ email_updates.py:
 Uses the Gmail API to combine and email alert files to the CPE OHRP email. Typically run on a weekly basis for update purposes.
 
 Other required files:
+
 	key_personnel.list - a plaintext file listing employees who are considered Key Personnel on one or more projects.
 
 	science_team.list -a plaintext file listing employees who are members of the Science division.
