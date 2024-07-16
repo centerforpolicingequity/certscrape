@@ -17,7 +17,7 @@ def option_2():
 	scan_citi_files.scan_app()
 
 def option_3():
-	messagebox.showinfo('Running Checks...')
+	messagebox.showinfo('Checks', 'Running Checks...')
 	email_updates.email_update()
 
 def option_4():
