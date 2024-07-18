@@ -37,7 +37,7 @@ def option_4():
 	
 def option_5():
 	messagebox.showinfo(title = 'Quitting', message = 'Thank you. Goodbye.')
-	exit()
+	sys.exit()
 
 menu.title('CITI UPDATE CENTER')
 menu_info = tk.Label(menu, text = 'CITI UPDATE CENTER \n Center for Policing Equity OHRP \n v.1.2 \n', width = 75, height = 4, bg = 'green', fg = 'white')
