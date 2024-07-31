@@ -539,6 +539,30 @@ def email_update():
         messagebox.showerror('Error','An error occurred. Check logs.')
         message = None
 
+def add_key_pers(input_file, keypers_file, key_list):
+
+x_team = []
+key_list = []
+add_list = []
+
+with open(input_file, 'r') as lei:
+	for line in lei:
+		x_team.append(line.strip('\n'))
+
+with open(keypers_file, 'r') as file:
+	for line in file:
+		key_list.append(line.strip('\n'))
+
+for name in x_team:
+	if name not in key_list:
+		print(name, ' ADDED as Key Personnel')
+		add_list.append(name)
+	else:
+		print(name, 'ALREADY LISTED as Key Personnel')
+
+with open(output_file, 'w') as output:
+	for name in add_list:
+		output.write(name + '\n')
 
 #Main Menu
 menu = tk.Tk()
