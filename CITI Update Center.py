@@ -192,13 +192,12 @@ def cert_app():
 	cert_window.title('CITI Certificate Scraper')
 	cert_app_info = tk.Label(cert_window, text = 'CITI Certificate Scraper \n Center for Policing Equity OHRP \n v.1.7 \n', width = 100, height = 4, bg = 'green', fg = 'white')
 	cert_app_scan_head = tk.Label(cert_window, text = 'Scanned Certificates:', width = 100, height = 4, bg = 'black', fg = 'white')
-	cert_app_info.grid(row = 1, column = 1)
-	cert_app_scan_head.grid(row = 3, column = 1)
+	cert_app_info.pack()
 	##Input Frame
+	new_sheet_label = tk.Label(cert_window, text = 'Is this for a new CITI sheet?', width = 100, height = 4, bg = "white", fg = "black")
+	new_sheet_label.pack()
 	input_frame = tk.Frame(cert_window, relief = 'sunken', width = 100)
-	input_frame.grid(row = 2, column = 1)
-	new_sheet_label = tk.Label(scan_window, text = 'Is this for a new CITI sheet?', width = 100, height = 4, bg = "white", fg = "black")
-	new_sheet_label.grid(column = 1, row = 2)
+	input_frame.pack()
 	global new_input
 	new_input = tk.StringVar(input_frame, value = 'None')
 	new_input_yes = tk.Radiobutton(input_frame, text = "Yes", fg = "black", variable = new_input, value = 'Yes')
@@ -206,13 +205,14 @@ def cert_app():
 	confirm = tk.Button(input_frame, text = 'OK', command = citi_cert_scan)
 	new_input_yes.pack()
 	new_input_no.pack()
-	confirm.pack(side = 'bottom')
+	confirm.pack()
 	##Display
+	cert_app_scan_head.pack()
 	global cert_info
 	cert_info = tk.Listbox(cert_window, bg = "black", fg = "green", width = 100)
-	cert_info.grid(row = 4, column = 1)
+	cert_info.pack()
 	exit_button = tk.Button(cert_window, text = 'Exit', width = 75, command = exit_command)
-	exit_button.grid(row = 5, column = 1)
+	exit_button.pack()
 	cert_window.mainloop()
 
 def sel():
