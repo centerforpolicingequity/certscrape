@@ -8,7 +8,8 @@ This Python script scans all PDF files in a provided directory (including subdir
 Citi Update Center.py
 Runs the main GUI for the CITI Update Center. From here, a user can select one of five options: Scan CITI Certificates, Update CITI Status, Email the Weekly Update to the CPE OHRP Email, Add Key Personnel, or exit.
 
-Scan CITI Certificates
+**Scan CITI Certificates**
+
 Compiles the following information from each CITI Certificate read, using a certain expected location on the document:
 - CITI Record Number
 - Name of Recipient (Full, family, and given name)
@@ -24,7 +25,8 @@ In the event that the CITI Record Number cannot be found, the script records the
 
 This scraper is mainly for IRB use to document who has what CITI certification and set up monitoring. Outputs a log of CITI Certificates labeled 'citi.csv'.
 
-Update CITI Status
+**Update CITI Status** 
+
 Scans the current list of employees from BambooHR and compares it to the list of members of the Science Team, those listed as Key Personnel, and all names listed within the log of CITI certificates. It then generates up to four files:
 
 	1. former.txt - a list of personnel who are listed within the CITI log but not the current employee list, indicating that the respective employees may no longer be with CPE.
@@ -35,10 +37,12 @@ Scans the current list of employees from BambooHR and compares it to the list of
 
 	4. citi_records.csv - a table of employees listing their name, whether they have required certificates, if those certificates are expired, if they are listed as key personnel, and if they are listed as members of the Science division.
 
-Email Updates
+**Email Updates**
+
 Uses the Gmail API to combine and email alert files to the CPE OHRP email. Typically run on a weekly basis for update purposes.
 
-Add Key Personnel
+**Add Key Personnel**
+
 Adds needed personnel (e.g. science_team.list) to file of key personnel (e.g. key_personnel.list).
 
 Other required files:
