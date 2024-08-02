@@ -552,27 +552,37 @@ def add_key_pers():
 	global keypers_file
 	keypers_file = file_keypers.get()
 
-	with open(input_file, 'r') as team:
-		for line in team:
-			x_team.append(line.strip('\n'))
-		team.close()
+	try:
+		with open(input_file, 'r') as team:
+			for line in team:
+				x_team.append(line.strip('\n'))
+			team.close()
+	except FileNotFoundError:
+		messagebox.showerror('Input File Missing', 'Please select a file of personnel to be added.')
 
-	with open(keypers_file, 'r') as key_file:
-		for line in key_file:
-			key_list.append(line.strip('\n'))
-		key_file.close()
+	try:
+		with open(keypers_file, 'r') as key_file:
+			for line in key_file:
+				key_list.append(line.strip('\n'))
+			key_file.close()
+	except FileNotFoundError:
+		messagebox.showerror('Key Personnel File Missing', 'Please select a file for existing key personnel.')
 
-	for name in x_team:
-		if name not in key_list:
-			key_pers_display.insert('end', name + ' ADDED as Key Personnel \n')
-			add_list.append(name)
-		else:
-			key_pers_display.insert('end', name + ' ALREADY LISTED as Key Personnel \n')
+	if x_team:
+			for name in x_team:
+				if key_list:
+					if name not in key_list:
+						key_pers_display.insert('end', '֎  ' + name + ': Added \n')
+						add_list.append(name)
+					else:
+						key_pers_display.insert('end', '⁐  ' + name + ': Present \n')
+	else:
+		key_pers_display.insert('end', 'Information missing. \n')
 
-	with open(keypers_file, 'a') as output:
-		if add_list:
-			for name in add_list:
-				output.write(name + '\n')
+	if add_list:
+		with open(keypers_file, 'a') as output:
+				for name in add_list:
+					output.write('\n' + name + '\n')
 
 def add_app():
 	global add_window
@@ -617,11 +627,11 @@ def add_app():
 	exit_button.grid(row = 3, column = 2)
 	
 	global input_display
-	input_display = tk.Text(add_window, height = 10, width = 10, bg = 'white', fg = 'black')
+	input_display = tk.Text(add_window, height = 10, width = 25, bg = 'purple', fg = 'white')
 	input_display.grid(row = 2, column = 1)
 	
 	global list_display
-	list_display = tk.Text(add_window, height = 10, width = 10, bg = 'yellow', fg = 'black')
+	list_display = tk.Text(add_window, height = 10, width = 25, bg = 'yellow', fg = 'black')
 	list_display.grid(row = 2, column = 3) 
 	
 	global key_pers_display
