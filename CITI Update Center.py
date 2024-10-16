@@ -11,11 +11,17 @@ from glob import iglob
 import base64
 import os.path
 from email.mime.text import MIMEText
-from google_auth_oauthlib.flow import InstalledAppFlow
+import gspread
+from google.oauth2.service_account import Credentials
 from googleapiclient.discovery import build
+from gspread_dataframe import set_with_dataframe
+from pydrive.auth import GoogleAuth
+from pydrive.drive import GoogleDrive
+import pygsheets
 from requests import HTTPError
 pd.options.mode.chained_assignment = None
 import datetime as dt
+import requests
 
 #Set Globals
 alerts_missing = []
@@ -26,14 +32,58 @@ key_personnel = []
 sci_alerts_missing = []
 sci_alerts_expired = []
 
+messagebox.showinfo(title = 'Starting', message = 'Pulling CITI Sheet Data')
+
+def get_google_sheet_data(spreadsheet_id,sheet_name, api_key):
+    # Construct the URL for the Google Sheets API
+    url = f'https://sheets.googleapis.com/v4/spreadsheets/{spreadsheet_id}/values/{sheet_name}!A1:Z?alt=json&key={api_key}'
+
+    try:
+        # Make a GET request to retrieve data from the Google Sheets API
+        response = requests.get(url)
+        response.raise_for_status()  # Raise an exception for HTTP errors
+
+        # Parse the JSON response
+        data = response.json()
+        return data
+
+    except requests.exceptions.RequestException as e:
+        # Handle any errors that occur during the request
+        messagebox.showerror(title = 'Initialize Fail', message = f"An error occurred: {e}")
+        return None
+
+# configurations
+spreadsheet_id = '1O4iyxmAwX3OCClhac2vzyeDStG-FoWeGLteYss6R2xo'
+with open('api.key', 'r') as file:
+	api_key = file.read().rstrip()
+sheet_name = "Certificate Record"
+
+scopes = ["https://spreadsheets.google.com/feeds",'https://www.googleapis.com/auth/spreadsheets',"https://www.googleapis.com/auth/drive.file","https://www.googleapis.com/auth/drive"]
+creds = Credentials.from_service_account_file('creds.json', scopes = scopes)
+sheet_data = get_google_sheet_data(spreadsheet_id,sheet_name, api_key)
+
+if sheet_data:
+	messagebox.showinfo(title = 'Initialize', message = 'Sheet Found, Attempting Fetch')
+	try:
+   		gc = gspread.service_account(filename = 'creds.json')
+   		gauth = GoogleAuth()
+   		drive = GoogleDrive(gauth)
+   		gs = gc.open_by_key(spreadsheet_id)
+   		messagebox.showinfo(title = 'Success', message = 'Connection Established with Google Sheets. \nStarting CITI Update Center...')
+	except Exception as e:
+		messagebox.showerror(title = 'Failed Fetch', message = f"Error: {e}")
+else:
+    messagebox.showerror(title = 'Failed Initialize', message = "Failed to fetch data from Google Sheets API.")
+
+
 
 #Child Windows and Functions
 def citi_cert_scan():
-
 	"""Scans for CITI Certificates"""
 	#Set up lists and directory info
+	sheet = gs.get_worksheet(0)
 	path = os.getcwd()
-	glob_directory = path + '/**/*'
+	glob_directory = path + '/certificates/*'
 	directory = [f for f in iglob(glob_directory, recursive = True) if os.path.isfile(f)]
 	global lst, lst2, lst2_a, lst2_b, lst3, lst4, lst5, cols
 	lst = []
@@ -55,7 +105,6 @@ def citi_cert_scan():
 
 	#Loop over all CITI Certificates in Directory
 	for file in directory:
-
 		if file.endswith(".pdf"):
 			with open(file, 'rb') as doc:
 				certificate = pdfquery.PDFQuery(doc)
@@ -176,10 +225,12 @@ def citi_cert_scan():
 	cert_info.insert(num, '\n Compiling Data...')
 	num = num + 1
 	frame = pd.DataFrame(list(zip(lst, lst2, lst2_b, lst2_a, lst3, lst4, lst5)), columns = cols )
-	cert_info.insert(num, '\n Saving to File...')
-	framename = "citi.csv"
-	frame.to_csv(framename, mode = 'a', header = header_select, index = False)
-	messagebox.showinfo(title = 'Successfully Saved', message ='Records saved under ' + framename)
+	cert_info.insert(num, '\n Appending to Google Sheet...')
+	frame_values = frame.values.tolist()
+	print(frame_values)
+	sheet.append_rows(frame_values)
+	#gs.values_append('Certificate Record', {'valueInputOption': 'RAW'}, {'values': frame_values})
+	messagebox.showinfo(title = 'Success', message =f'{len(frame_values)} rows added to CITI Certifaction Record')
 
 def cert_app():
 	global cert_window
@@ -492,55 +543,6 @@ def scan_app():
 	exit_button.grid(row = 6, column = 1)
 	scan_window.mainloop()
 
-def email_update():
-    now = dt.date.today() # Current date/time
-    message_header = 'For the Office of Human Research Protection:' + '\n' + '*'*60 + '\n'
-    message_footer = '*'*60 + '\n' + 'Sent from CITI Email Updater' + '\n' + '*'*60
-    #Check if alerts are active:
-    path = os.getcwd() + '/**/*'
-
-    if os.path.isfile('sci_alerts.txt'):
-        messagebox.showinfo('Check 1/3', 'Science Alerts Detected')
-    else:
-        with open('sci_alerts.txt', 'w') as file:
-            file.write('No Science Team Alerts')
-            file.close()
-    sci_alerts = open('sci_alerts.txt', 'r')
-
-    if os.path.isfile('former.txt'):
-        messagebox.showinfo('Check 2/3', 'Employee Changes Detected')
-    else:
-        with open('former.txt', 'w') as file:
-            file.write("No Other Employee Updates")
-            file.close()
-    former_alerts = open('former.txt', 'r')
-
-    if os.path.isfile('alerts.txt'):
-        messagebox.showinfo('Check 3/3','Key Personnel Alerts Detected')
-    else:
-        with open('alerts.txt', 'w') as file:
-            file.write('No Key Personnel Alerts')
-            file.close()
-    key_alerts = open('alerts.txt', 'r')
-
-    SCOPES = [
-            "https://www.googleapis.com/auth/gmail.send"
-        ]
-    flow = InstalledAppFlow.from_client_secrets_file('credentials.json', SCOPES)
-    creds = flow.run_local_server(port=0)
-
-    service = build('gmail', 'v1', credentials=creds)
-    message = MIMEText(message_header + sci_alerts.read() + '\n' + key_alerts.read() + '\n' + former_alerts.read() + '\n' + message_footer)
-    message['to'] = 'CPEIRB@policingequity.org'
-    message['subject'] = 'CITI UPDATE:' + ' ' + now.strftime("%m - %d - %Y")
-    create_message = {'raw': base64.urlsafe_b64encode(message.as_string().encode('UTF-8')).decode('ascii')}
-
-    try:
-        message = (service.users().messages().send(userId="me", body=create_message).execute())
-        messagebox.showinfo('Success', 'Successfully sent message.')
-    except Exception:
-        messagebox.showerror('Error','An error occurred. Check logs.')
-        message = None
 
 def add_key_pers():
 	x_team = []
@@ -650,23 +652,10 @@ def option_2():
 	scan_app()
 
 def option_3():
-	messagebox.showinfo('Checks', 'Running Checks...')
-	email_update()
+	messagebox.showwarning('DEPRECEATED', 'This feature is being removed.')
 
 def option_4():
-	#Clean lingering files
-	#If alerts are already cleared
-	if os.path.isfile('former.txt') == False and os.path.isfile('alerts.txt') == False and os.path.isfile('sci_alerts.txt') == False:
-		messagebox.showerror('No Alerts', 'Alerts already cleared.')
-	if os.path.isfile('former.txt'):
-		messagebox.showinfo('Former Cleared', 'Cleared Former Employee List')
-		os.remove('former.txt')
-	if os.path.isfile('alerts.txt'):
-		messagebox.showinfo('KP Cleared', 'Cleared Key Personnel Alerts')
-		os.remove('alerts.txt')
-	if os.path.isfile('sci_alerts.txt'):
-		messagebox.showinfo('Science Cleared', 'Cleared Science Alerts')
-		os.remove('sci_alerts.txt')
+	messagebox.showwarning('DEPRECEATED', 'This feature is being removed.')
 
 def option_5():
 	add_app()
