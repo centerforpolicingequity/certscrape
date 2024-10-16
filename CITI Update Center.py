@@ -1,3 +1,4 @@
+#Libraries
 import tkinter as tk
 from tkinter import messagebox
 from tkinter import filedialog as fd
@@ -10,10 +11,8 @@ import os
 from glob import iglob
 import base64
 import os.path
-from email.mime.text import MIMEText
 import gspread
 from google.oauth2.service_account import Credentials
-from googleapiclient.discovery import build
 from gspread_dataframe import set_with_dataframe
 from pydrive.auth import GoogleAuth
 from pydrive.drive import GoogleDrive
@@ -81,7 +80,7 @@ else:
 def citi_cert_scan():
 	"""Scans for CITI Certificates"""
 	#Set up lists and directory info
-	sheet = gs.get_worksheet(0)
+	cert_sheet = gs.get_worksheet(0)
 	path = os.getcwd()
 	glob_directory = path + '/certificates/*'
 	directory = [f for f in iglob(glob_directory, recursive = True) if os.path.isfile(f)]
@@ -95,13 +94,6 @@ def citi_cert_scan():
 	lst5 = []
 	cols = ['cert_number', 'recipient_name', 'name_last', 'name_first', 'cert_date', 'exp_date', 'group']
 	num = 0
-	global new_file
-	new_file = new_input.get()
-	header_select = []
-	if new_file == 'Yes':
-		header_select = True
-	elif new_file == 'No':
-		header_select = False
 
 	#Loop over all CITI Certificates in Directory
 	for file in directory:
@@ -219,7 +211,7 @@ def citi_cert_scan():
 					lst5.append(group)
 
 
-	#Compile to pandas DataFrame and Export
+	#Compile and Append to Google Sheet
 	cert_info.insert(num, '*' * 60)
 	num = num + 2
 	cert_info.insert(num, '\n Compiling Data...')
@@ -228,8 +220,7 @@ def citi_cert_scan():
 	cert_info.insert(num, '\n Appending to Google Sheet...')
 	frame_values = frame.values.tolist()
 	print(frame_values)
-	sheet.append_rows(frame_values)
-	#gs.values_append('Certificate Record', {'valueInputOption': 'RAW'}, {'values': frame_values})
+	cert_sheet.append_rows(frame_values, value_input_option = 'USER_ENTERED')
 	messagebox.showinfo(title = 'Success', message =f'{len(frame_values)} rows added to CITI Certifaction Record')
 
 def cert_app():
@@ -245,17 +236,9 @@ def cert_app():
 	cert_app_scan_head = tk.Label(cert_window, text = 'Scanned Certificates:', width = 100, height = 4, bg = 'black', fg = 'white')
 	cert_app_info.pack()
 	##Input Frame
-	new_sheet_label = tk.Label(cert_window, text = 'Is this for a new CITI sheet?', width = 100, height = 4, bg = "white", fg = "black")
-	new_sheet_label.pack()
 	input_frame = tk.Frame(cert_window, relief = 'sunken', width = 100)
 	input_frame.pack()
-	global new_input
-	new_input = tk.StringVar(input_frame, value = 'None')
-	new_input_yes = tk.Radiobutton(input_frame, text = "Yes", fg = "black", variable = new_input, value = 'Yes')
-	new_input_no = tk.Radiobutton(input_frame, text = "No", fg = "black", variable = new_input, value = 'No')
-	confirm = tk.Button(input_frame, text = 'OK', command = citi_cert_scan)
-	new_input_yes.pack()
-	new_input_no.pack()
+	confirm = tk.Button(input_frame, text = 'Scan', command = citi_cert_scan)
 	confirm.pack()
 	##Display
 	cert_app_scan_head.pack()
