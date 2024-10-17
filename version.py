@@ -2,7 +2,7 @@ import pyinstaller_versionfile as pv
 
 pv.create_versionfile(
 	output_file = "versionfile.txt",
-	version = "1.3",
+	version = "2.0",
 	company_name = "Center for Policing Equity",
 	file_description = "OHRP CITI App",
 	internal_name = "CITI Update Center",

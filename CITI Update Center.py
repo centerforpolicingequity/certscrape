@@ -1,4 +1,11 @@
+# CITI Update Center
+# v.2.0
+# Center for Policing Equity
+# Written by: Jonathan LLoyd
+#Last Updated: 10/17/2024
+#Libraries
 import tkinter as tk
+import io
 from tkinter import messagebox
 from tkinter import filedialog as fd
 import sys, os
@@ -10,12 +17,17 @@ import os
 from glob import iglob
 import base64
 import os.path
-from email.mime.text import MIMEText
-from google_auth_oauthlib.flow import InstalledAppFlow
-from googleapiclient.discovery import build
+import gspread
+from google.oauth2.service_account import Credentials
+from gspread_dataframe import set_with_dataframe
+from pydrive.auth import GoogleAuth
+from pydrive.drive import GoogleDrive
+import pygsheets
 from requests import HTTPError
 pd.options.mode.chained_assignment = None
 import datetime as dt
+import requests
+from itertools import chain
 
 #Set Globals
 alerts_missing = []
@@ -26,14 +38,37 @@ key_personnel = []
 sci_alerts_missing = []
 sci_alerts_expired = []
 
+#Splash
+messagebox.showinfo(title = 'Starting...', message = 'Pulling CITI Sheet Data')
+# configurations
+spreadsheet_id = '1XaSGwol8WqkezhNDhruM8P_EA64tTQawHaw1mzeSgcU'
+with open('api.key', 'r') as file:
+	api_key = file.read().rstrip()
+sheet_name = "Certificate Record"
+
+scopes = ["https://spreadsheets.google.com/feeds",'https://www.googleapis.com/auth/spreadsheets',"https://www.googleapis.com/auth/drive.file","https://www.googleapis.com/auth/drive"]
+creds = Credentials.from_service_account_file('creds.json', scopes = scopes)
+gc = gspread.service_account(filename = 'creds.json')
+gs = gc.open_by_key(spreadsheet_id)
+
+if gs:
+	messagebox.showinfo(title = 'Initializing...', message = 'Certificate Record Found. \nFetching Data...')
+	try:
+   		gc = gspread.service_account(filename = 'creds.json')
+   		gs = gc.open_by_key(spreadsheet_id)
+   		messagebox.showinfo(title = 'Success', message = 'Connection Established with Certificate Record. \nStarting CITI Update Center...')
+	except Exception as e:
+		messagebox.showerror(title = 'Failure', message = f"Error: {e}")
+else:
+    messagebox.showerror(title = 'Failure', message = "Failed to start CITI Update Center.\n Please check your Internet connection.")
 
 #Child Windows and Functions
 def citi_cert_scan():
-
 	"""Scans for CITI Certificates"""
 	#Set up lists and directory info
+	cert_sheet = gs.get_worksheet(0)
 	path = os.getcwd()
-	glob_directory = path + '/**/*'
+	glob_directory = path + '/certificates/*'
 	directory = [f for f in iglob(glob_directory, recursive = True) if os.path.isfile(f)]
 	global lst, lst2, lst2_a, lst2_b, lst3, lst4, lst5, cols
 	lst = []
@@ -45,17 +80,9 @@ def citi_cert_scan():
 	lst5 = []
 	cols = ['cert_number', 'recipient_name', 'name_last', 'name_first', 'cert_date', 'exp_date', 'group']
 	num = 0
-	global new_file
-	new_file = new_input.get()
-	header_select = []
-	if new_file == 'Yes':
-		header_select = True
-	elif new_file == 'No':
-		header_select = False
 
 	#Loop over all CITI Certificates in Directory
 	for file in directory:
-
 		if file.endswith(".pdf"):
 			with open(file, 'rb') as doc:
 				certificate = pdfquery.PDFQuery(doc)
@@ -170,16 +197,16 @@ def citi_cert_scan():
 					lst5.append(group)
 
 
-	#Compile to pandas DataFrame and Export
+	#Compile and Append to Google Sheet
 	cert_info.insert(num, '*' * 60)
 	num = num + 2
 	cert_info.insert(num, '\n Compiling Data...')
 	num = num + 1
 	frame = pd.DataFrame(list(zip(lst, lst2, lst2_b, lst2_a, lst3, lst4, lst5)), columns = cols )
-	cert_info.insert(num, '\n Saving to File...')
-	framename = "citi.csv"
-	frame.to_csv(framename, mode = 'a', header = header_select, index = False)
-	messagebox.showinfo(title = 'Successfully Saved', message ='Records saved under ' + framename)
+	cert_info.insert(num, '\n Appending to Google Sheet...')
+	frame_values = frame.values.tolist()
+	cert_sheet.append_rows(frame_values, value_input_option = 'USER_ENTERED')
+	messagebox.showinfo(title = 'Success', message =f'{len(frame_values)} rows added to CITI Certifaction Record')
 
 def cert_app():
 	global cert_window
@@ -190,21 +217,13 @@ def cert_app():
 		cert_window.destroy()
 	##Info
 	cert_window.title('CITI Certificate Scraper')
-	cert_app_info = tk.Label(cert_window, text = 'CITI Certificate Scraper \n Center for Policing Equity OHRP \n v.1.7 \n', width = 100, height = 4, bg = 'green', fg = 'white')
+	cert_app_info = tk.Label(cert_window, text = 'CITI Certificate Scraper \n Center for Policing Equity OHRP \n v.2.0 \n', width = 100, height = 4, bg = 'green', fg = 'white')
 	cert_app_scan_head = tk.Label(cert_window, text = 'Scanned Certificates:', width = 100, height = 4, bg = 'black', fg = 'white')
 	cert_app_info.pack()
 	##Input Frame
-	new_sheet_label = tk.Label(cert_window, text = 'Is this for a new CITI sheet?', width = 100, height = 4, bg = "white", fg = "black")
-	new_sheet_label.pack()
 	input_frame = tk.Frame(cert_window, relief = 'sunken', width = 100)
 	input_frame.pack()
-	global new_input
-	new_input = tk.StringVar(input_frame, value = 'None')
-	new_input_yes = tk.Radiobutton(input_frame, text = "Yes", fg = "black", variable = new_input, value = 'Yes')
-	new_input_no = tk.Radiobutton(input_frame, text = "No", fg = "black", variable = new_input, value = 'No')
-	confirm = tk.Button(input_frame, text = 'OK', command = citi_cert_scan)
-	new_input_yes.pack()
-	new_input_no.pack()
+	confirm = tk.Button(input_frame, text = 'Scan', command = citi_cert_scan)
 	confirm.pack()
 	##Display
 	cert_app_scan_head.pack()
@@ -217,119 +236,119 @@ def cert_app():
 
 def sel():
 		"""Runs a scan of CITI Certificates after being selected by radio button"""
-		global selection
+		#global selection
 		global certs
-		selection = str(initialize.get())
+		#selection = str(initialize.get())
 		#Import data
 		try:
-			certs = pd.read_csv('citi.csv', encoding = 'utf-8')
+			cert_sheet = gs.get_worksheet(0)
+			certs_data = cert_sheet.get_all_values()
+			certs_head = certs_data.pop(0)
+			certs = pd.DataFrame(certs_data, columns = certs_head)
 			#Fix name issue
 			certs['name_first'] = certs['name_first'].str.slice(0,1)+'.'
 			certs['recipient_name'] = certs['name_first'].str.upper() + ' ' + certs['name_last'].str.upper()
-		except FileNotFoundError:
-			messagebox.showerror(title = 'Missing Certificates', message = 'Error: Cannot Find CITI certificates file (citi.csv), please check directory.')
+		except Exception as e:
+			messagebox.showerror(title = 'Missing Certificates', message = f'Error: {e}.')
 			sys.exit(0)
 
 		#Import Science Team Members
 		try:
-			with open('science_team.list', 'r') as sci:
-				for line in sci:
-					sci_team.append(line.strip('\n'))
-		except FileNotFoundError:
-			messagebox.showerror(title = 'Missing Science', message = 'Error: Science Team list not found, please check directory.')
+			sci_sheet = gs.get_worksheet(2)
+			science_team = sci_sheet.get_all_values()
+			sci_team = list(chain.from_iterable(science_team))
+		except Exception as e:
+			messagebox.showerror(title = 'Science Team Error', message = f'Error: {e}')
 			sys.exit(0)
-
 		#Import Key Personnel
 		try:
-			with open('key_personnel.list', 'r') as list:
-				for line in list:
-					key_personnel.append(line.strip('\n'))
-		except FileNotFoundError:
-			messagebox.showerror(title = 'Missing KP', message = 'Error: Key Personnel list not found, please check directory.')
+			key_pers_sheet = gs.get_worksheet(3)
+			key_pers = key_pers_sheet.get_all_values()
+			key_personnel = list(chain.from_iterable(key_pers))
+		except Exception as e:
+			messagebox.showerror(title = 'Key Personnel Error', message = f'Error: {e}')
 			sys.exit(0)
-		## No, then run a scan of all the data:
-		if selection == 'N':
-			### Adjusting Names
-			name_scrape = pd.read_csv('general_bamboohr_org_chart.csv')['Name'].str.upper().tolist()
-			for i in name_scrape:
-				name_split = i.split() 
-				if len(name_split) == 2:
-					name_first = name_split[0][:1]+'.'
-					name_last = (name_split[1].strip())
-					chart.append(name_first + ' ' + name_last) 
-				elif len(name_split) == 3:
-					name_first = name_split[0][:1]+'.'
-					name_last = name_split[2].strip()
-					chart.append(name_first + ' ' + name_last)
 
-				### Filter out former employees
-			current_employees = set(chart)
-			all_recipients = set(certs['recipient_name'])
-			missing_employees = all_recipients - current_employees
-			if missing_employees:
-				with open('former.txt', 'w') as file:
-					file.write('GENERAL ALERTS')
-					file.write('\n')
-					file.write('The following employees may no longer work at CPE as of ' + dt.date.today().strftime("%Y-%m-%d") + '\n')
-					file.write('='*60 + '\n')
-					for name in missing_employees:
-						file.write('%s\n' % name)
+		### Adjusting Names
+		employee_sheet = gs.get_worksheet(4)
+		employee_data = employee_sheet.get_all_values()
+		name_scrape = list(chain.from_iterable(employee_data))
+		for i in name_scrape:
+			u = i.upper()
+			name_split = u.split() 
+			if len(name_split) == 2:
+				name_first = name_split[0][:1]+'.'
+				name_last = (name_split[1].strip())
+				chart.append(name_first + ' ' + name_last) 
+			elif len(name_split) == 3:
+				name_first = name_split[0][:1]+'.'
+				name_last = name_split[2].strip()
+				chart.append(name_first + ' ' + name_last)
 
-			current_certs = certs[certs['recipient_name'].isin(current_employees)]
-			final_frame= pd.DataFrame(current_employees, columns = ['recipient_name'])
+			### Filter out former employees
+		current_employees = set(chart)
+		all_recipients = set(certs['recipient_name'])
+		missing_employees = all_recipients - current_employees
+		if missing_employees:
+			with open('former.txt', 'w') as file:
+				file.write('GENERAL ALERTS')
+				file.write('\n')
+				file.write('The following employees may no longer work at CPE as of ' + dt.date.today().strftime("%Y-%m-%d") + '\n')
+				file.write('='*60 + '\n')
+				for name in missing_employees:
+					file.write('%s\n' % name)
 
-			### Search
-			#### Define Functions
-			def has_hsr(name):
-				"""Checks if employee currently has HSR Certificate"""
-				return name in current_certs[current_certs['group'] == 'HSR for Social & Behavioral Faculty, Graduate Students & Postdoctoral Scholars']['recipient_name'].tolist()
+		current_certs = certs[certs['recipient_name'].isin(current_employees)]
+		final_frame= pd.DataFrame(current_employees, columns = ['recipient_name'])
 
-			def has_rcr(name):
-				"""Checks if employee currently has RCR Certificate"""
-				return name in current_certs[current_certs['group'] == 'Responsible Conduct of Research (RCR)']['recipient_name'].tolist()
+		### Search
+		#### Define Functions
+		def has_hsr(name):
+			"""Checks if employee currently has HSR Certificate"""
+			return name in current_certs[current_certs['group'] == 'HSR for Social & Behavioral Faculty, Graduate Students & Postdoctoral Scholars']['recipient_name'].tolist()
 
-			def hsr_expired(val):
-				"""Checks if latest HSR certificates on file are expired"""
-				now = dt.date.today()
-				current_certs['exp_date'] = pd.to_datetime(current_certs['exp_date'], dayfirst = True, format = "%d-%b-%y")
-				latest_hsr = current_certs[current_certs['group']=='HSR for Social & Behavioral Faculty, Graduate Students & Postdoctoral Scholars'].groupby('recipient_name')['exp_date'].max()
-				latest_hsr = latest_hsr.reset_index()
-				try:
-					return val in latest_hsr[latest_hsr['exp_date'].dt.date < now]['recipient_name'].tolist()
-				except ValueError:
-					return False
+		def has_rcr(name):
+			"""Checks if employee currently has RCR Certificate"""
+			return name in current_certs[current_certs['group'] == 'Responsible Conduct of Research (RCR)']['recipient_name'].tolist()
 
-			def rcr_expired(val):
-				"""Checks if latest RCR certificates on file are expired"""
-				now = dt.date.today()
-				current_certs['exp_date'] = pd.to_datetime(current_certs['exp_date'], format = "%d-%b-%y")
-				latest_rcr = current_certs[current_certs['group']=='Responsible Conduct of Research (RCR)'].groupby('recipient_name')['exp_date'].max()
-				latest_rcr = latest_rcr.reset_index()
-				try:
-					return val in latest_rcr[latest_rcr['exp_date'].dt.date < now]['recipient_name'].tolist()
-				except ValueError:
-					return False
+		def hsr_expired(val):
+			"""Checks if latest HSR certificates on file are expired"""
+			now = dt.date.today()
+			current_certs['exp_date'] = pd.to_datetime(current_certs['exp_date'], dayfirst = False, format = "%m/%d/%Y")
+			latest_hsr = current_certs[current_certs['group']=='HSR for Social & Behavioral Faculty, Graduate Students & Postdoctoral Scholars'].groupby('recipient_name')['exp_date'].max()
+			latest_hsr = latest_hsr.reset_index()
+			try:
+				return val in latest_hsr[latest_hsr['exp_date'].dt.date < now]['recipient_name'].tolist()
+			except ValueError:
+				return False
+
+		def rcr_expired(val):
+			"""Checks if latest RCR certificates on file are expired"""
+			now = dt.date.today()
+			current_certs['exp_date'] = pd.to_datetime(current_certs['exp_date'], format = "%m/%d/%Y")
+			latest_rcr = current_certs[current_certs['group']=='Responsible Conduct of Research (RCR)'].groupby('recipient_name')['exp_date'].max()
+			latest_rcr = latest_rcr.reset_index()
+			try:
+				return val in latest_rcr[latest_rcr['exp_date'].dt.date < now]['recipient_name'].tolist()
+			except ValueError:
+				return False
 
 
-			### Check for values
-			final_frame['hsr_val'] = final_frame['recipient_name'].apply(has_hsr)
-			final_frame['rcr_val'] = final_frame['recipient_name'].apply(has_rcr)
-			final_frame['hsr_exp'] = final_frame['recipient_name'].apply(hsr_expired)
-			final_frame['rcr_exp'] = final_frame['recipient_name'].apply(rcr_expired)
+		### Check for values
+		final_frame['hsr_val'] = final_frame['recipient_name'].apply(has_hsr)
+		final_frame['rcr_val'] = final_frame['recipient_name'].apply(has_rcr)
+		final_frame['hsr_exp'] = final_frame['recipient_name'].apply(hsr_expired)
+		final_frame['rcr_exp'] = final_frame['recipient_name'].apply(rcr_expired)
 
-			#Apply science team label:
-			final_frame['sci'] = final_frame['recipient_name'].isin(sci_team)
+		#Apply science team label:
+		final_frame['sci'] = final_frame['recipient_name'].isin(sci_team)
 
-			#Apply key personnel label:
-			final_frame['key_pers'] = final_frame['recipient_name'].isin(key_personnel)
+		#Apply key personnel label:
+		final_frame['key_pers'] = final_frame['recipient_name'].isin(key_personnel)
 
-			framename= 'citi_records.csv'
-			final_frame.to_csv(framename, header = True, index = False)
-		## Yes: Then read the up-to-date records
-		else:
-			final_frame = pd.read_csv('citi_records.csv', header = 0, names = ('recipient_name', 'hsr_val', 'rcr_val', 'hsr_exp', 'rcr_exp', 'sci', 'key_pers'))
+		
 
-			# Results output
+		# Results output
 		for index, row in final_frame.iterrows():
 			num = 0
 			## Check if missing certification
@@ -404,47 +423,61 @@ def sel():
 					pass
 			else:
 				pass
-		# Write Report
-		if alerts_missing or alerts_expired:
-			with open('alerts.txt', 'w') as file:
-				file.write('KEY PERSONNEL ALERTS')
-				file.write('\n')
-				file.write('='*10)
-				file.write('MISSING CERTIFICATIONS AS OF ' + dt.date.today().strftime("%Y-%m-%d"))
-				file.write('='*10 + '\n')
-				if alerts_missing:
-					for alert in alerts_missing:
-						file.write('%s\n' % alert)
-				else:
-					file.write('No Missing Certifications \n')
-				file.write('='*10)
-				file.write('EXPIRED CERTIFICATIONS AS OF ' + dt.date.today().strftime("%Y-%m-%d"))
-				file.write('='*10 + '\n')
-				if alerts_expired:
-					for alert in alerts_expired:
-						file.write('%s\n' % alert)
-				else:
-					file.write('No Expired Certifications \n')
-		if sci_alerts_missing or sci_alerts_expired:
-			with open('sci_alerts.txt', 'w') as file:
-				file.write('SCIENCE TEAM ALERTS')
-				file.write('\n')
-				file.write('='*10)
-				file.write('MISSING CERTIFICATIONS AS OF ' + dt.date.today().strftime("%Y-%m-%d"))
-				file.write('='*10 + '\n')
-				if sci_alerts_missing:
-					for alert in sci_alerts_missing:
-						file.write('%s\n' % alert)
-				else:
-					file.write('No Missing Certifications \n')
-				file.write('='*10)
-				file.write('EXPIRED CERTIFICATIONS AS OF ' + dt.date.today().strftime("%Y-%m-%d"))
-				file.write('='*10 + '\n')
-				if sci_alerts_expired:
-					for alert in sci_alerts_expired:
-						file.write('%s\n' % alert)
-				else:
-					file.write('No Expired Certifications \n')
+		# Write Reports
+		try: 
+			missing_sheet = gs.worksheet('Missing')
+			missing_sheet.clear()
+		except:
+			gs.add_worksheet('Missing', 3, 3)
+			missing_sheet = gs.worksheet('Missing')
+			missing_sheet.clear()
+		try:
+			expired_sheet = gs.worksheet('Expired')
+			expired_sheet.clear()
+		except:
+			gs.add_worksheet('Expired', 3, 3)
+			expired_sheet = gs.worksheet('Expired')
+			expired_sheet.clear()
+
+		
+		if alerts_missing:
+				missing_sheet.batch_update([{'range' :'A2', 'values': [alerts_missing], 'majorDimension': 'COLUMNS',}])
+		else:
+			alerts_missing.append('No Missing Certifications (Key Personnel)')
+			missing_sheet.batch_update([{'range' : 'A2', 'values': [alerts_missing], 'majorDimension': 'COLUMNS',}])
+			missing_info.insert(0, 'No Missing Certifications (Key Personnel)')
+
+		if alerts_expired:
+			expired_sheet.batch_update([{'range': 'A2', 'values': [alerts_expired], 'majorDimension': 'COLUMNS',}])
+		else:
+			alerts_expired.append('No Expired Certifications (Key Personnel)')
+			expired_sheet.batch_update([{'range' : 'A2', 'values': [alerts_expired], 'majorDimension': 'COLUMNS',}])
+			expired_info.insert(0, 'No Expired Certifications (Key Personnel)')
+
+
+
+		if sci_alerts_missing:
+			missing_sheet.batch_update([{'range' :'C2', 'values': [sci_alerts_missing], 'majorDimension': 'COLUMNS',}])
+		else:
+			sci_alerts_missing.append('No Missing Certifications (Science)')
+			missing_sheet.batch_update([{'range' : 'C2', 'values': [sci_alerts_missing], 'majorDimension': 'COLUMNS',}])
+			missing_info.insert(0, 'No Missing Certifications (Science)')
+
+		if sci_alerts_expired:
+			expired_sheet.batch_update([{'range': 'C2', 'values': [sci_alerts_expired], 'majorDimension': 'COLUMNS',}])
+		else:
+			sci_alerts_expired.append('No Expired Certifications (Science)')
+			expired_sheet.batch_update([{'range' : 'C2', 'values': [sci_alerts_expired], 'majorDimension': 'COLUMNS',}])
+			expired_info.insert(0, 'No Missing Certifications (Science)')
+
+		## Label Sheet Columns
+		missing_sheet.update_cell(1,1, 'Key Personnel')
+		missing_sheet.update_cell(1,3, 'Science')
+		expired_sheet.update_cell(1,1, 'Key Personnel')
+		expired_sheet.update_cell(1,3, 'Science')
+
+		#Finish	
+		messagebox.showinfo(title = 'Success', message = 'Records Updated')
 
 def scan_app():
 	#Main window
@@ -456,7 +489,7 @@ def scan_app():
 	def exit_command():
 		scan_window.destroy()
 	#Missing Info
-	scan_app_info = tk.Label(scan_window, text = 'CITI Employee Search Tool \n Center for Policing Equity OHRP \n v.1.7 \n', width = 100, height = 4, bg = 'green', fg = 'white')
+	scan_app_info = tk.Label(scan_window, text = 'CITI Employee Search Tool \n Center for Policing Equity OHRP \n v.2.0 \n', width = 100, height = 4, bg = 'green', fg = 'white')
 	frm_missing = tk.Frame(scan_window, relief = 'sunken', width = 100)
 	missing_head = tk.Label(frm_missing, text = 'MISSING CERTIFICATIONS', width = 100, height = 4, bg = "black", fg = "white")
 	global missing_info
@@ -467,15 +500,7 @@ def scan_app():
 	global expired_info
 	expired_info = tk.Listbox(frm_expired, bg = "yellow", fg = "black", width = 100)
 	#Main Window display
-	global initialize
-	initialize = tk.StringVar(scan_window, value = 'None')
-	label_app = tk.Label(scan_window, text = 'Is there already an up-to-date copy of citi_records.csv?', width = 100, height = 4, bg = "white", fg = "black")
-	label_app.grid(column = 1, row = 2)
-	first_time_yes = tk.Radiobutton(frm_missing, text = "Yes", fg = "black", variable = initialize, value = 'Y')
-	first_time_no = tk.Radiobutton(frm_missing, text = "No", fg = "black", variable = initialize, value = 'N')
-	confirm = tk.Button(scan_window, text = 'OK', command = sel)
-	first_time_yes.pack()
-	first_time_no.pack()
+	confirm = tk.Button(scan_window, text = 'Scan', command = sel)
 	#Missing Window Display
 	missing_head.pack(side = 'top')
 	missing_info.pack(side = 'bottom')
@@ -491,156 +516,7 @@ def scan_app():
 	exit_button = tk.Button(scan_window, text = 'Exit', width = 75, command = exit_command)
 	exit_button.grid(row = 6, column = 1)
 	scan_window.mainloop()
-
-def email_update():
-    now = dt.date.today() # Current date/time
-    message_header = 'For the Office of Human Research Protection:' + '\n' + '*'*60 + '\n'
-    message_footer = '*'*60 + '\n' + 'Sent from CITI Email Updater' + '\n' + '*'*60
-    #Check if alerts are active:
-    path = os.getcwd() + '/**/*'
-
-    if os.path.isfile('sci_alerts.txt'):
-        messagebox.showinfo('Check 1/3', 'Science Alerts Detected')
-    else:
-        with open('sci_alerts.txt', 'w') as file:
-            file.write('No Science Team Alerts')
-            file.close()
-    sci_alerts = open('sci_alerts.txt', 'r')
-
-    if os.path.isfile('former.txt'):
-        messagebox.showinfo('Check 2/3', 'Employee Changes Detected')
-    else:
-        with open('former.txt', 'w') as file:
-            file.write("No Other Employee Updates")
-            file.close()
-    former_alerts = open('former.txt', 'r')
-
-    if os.path.isfile('alerts.txt'):
-        messagebox.showinfo('Check 3/3','Key Personnel Alerts Detected')
-    else:
-        with open('alerts.txt', 'w') as file:
-            file.write('No Key Personnel Alerts')
-            file.close()
-    key_alerts = open('alerts.txt', 'r')
-
-    SCOPES = [
-            "https://www.googleapis.com/auth/gmail.send"
-        ]
-    flow = InstalledAppFlow.from_client_secrets_file('credentials.json', SCOPES)
-    creds = flow.run_local_server(port=0)
-
-    service = build('gmail', 'v1', credentials=creds)
-    message = MIMEText(message_header + sci_alerts.read() + '\n' + key_alerts.read() + '\n' + former_alerts.read() + '\n' + message_footer)
-    message['to'] = 'CPEIRB@policingequity.org'
-    message['subject'] = 'CITI UPDATE:' + ' ' + now.strftime("%m - %d - %Y")
-    create_message = {'raw': base64.urlsafe_b64encode(message.as_string().encode('UTF-8')).decode('ascii')}
-
-    try:
-        message = (service.users().messages().send(userId="me", body=create_message).execute())
-        messagebox.showinfo('Success', 'Successfully sent message.')
-    except Exception:
-        messagebox.showerror('Error','An error occurred. Check logs.')
-        message = None
-
-def add_key_pers():
-	x_team = []
-	key_list = []
-	add_list = []
-
-	global input_file
-	input_file = file_input.get()
-	global keypers_file
-	keypers_file = file_keypers.get()
-
-	try:
-		with open(input_file, 'r') as team:
-			for line in team:
-				x_team.append(line.strip('\n'))
-			team.close()
-	except FileNotFoundError:
-		messagebox.showerror('Input File Missing', 'Please select a file of personnel to be added.')
-
-	try:
-		with open(keypers_file, 'r') as key_file:
-			for line in key_file:
-				key_list.append(line.strip('\n'))
-			key_file.close()
-	except FileNotFoundError:
-		messagebox.showerror('Key Personnel File Missing', 'Please select a file for existing key personnel.')
-
-	if x_team:
-			for name in x_team:
-				if key_list:
-					if name not in key_list:
-						key_pers_display.insert('end', '֎  ' + name + ': Added \n')
-						add_list.append(name)
-					else:
-						key_pers_display.insert('end', '⁐  ' + name + ': Present \n')
-	else:
-		key_pers_display.insert('end', 'Information missing. \n')
-
-	if add_list:
-		with open(keypers_file, 'a') as output:
-				for name in add_list:
-					output.write('\n' + name + '\n')
-
-def add_app():
-	global add_window
-	global file_input
-	file_input = tk.StringVar()
-	global file_keypers
-	file_keypers = tk.StringVar()
-	add_window= tk.Toplevel()
-	add_window.configure(background = "white")
-	add_window.geometry('800x500')
-	add_window.title('Key Personnel Tool')
-
-	def select_file_input():
-		input_path = fd.askopenfilename(title = "Personnel to be Added", filetypes =[("List files", "*.list"), ("All files", "*")])
-		if input_path:
-			with open(input_path, 'r') as file:
-				content = file.read()
-				input_display.insert('end', content)
-				file.close()
-		file_input.set(input_path)
-
-	def select_file_keypers():
-		keypers_path = fd.askopenfilename(title = "Key Personnel File", filetypes =[("List files", "*.list"), ("All files", "*")])
-		if keypers_path:
-			with open(keypers_path, 'r') as file:
-				content = file.read()
-				list_display.insert('end', content)
-				file.close()
-		file_keypers.set(keypers_path)
-	def exit_command():
-		add_window.destroy()	
-
-	file_select_input = tk.Button(add_window, text = 'Addition List', width = 25, command = select_file_input)
-	file_select_input.grid(row = 1, column = 1)
-	file_select_keypers = tk.Button(add_window, text = 'Key Personnel File', width = 25, command = select_file_keypers)
-	file_select_keypers.grid(row = 1, column = 3)
-	
-	add_button = tk.Button(add_window, text = 'Add', bg = 'green', width = 25, command = add_key_pers)
-	add_button.grid(row = 2, column = 2)
-	
-	exit_button = tk.Button(add_window, text = 'Exit', width = 25, command = exit_command)
-	exit_button.grid(row = 3, column = 2)
-	
-	global input_display
-	input_display = tk.Text(add_window, height = 10, width = 25, bg = 'purple', fg = 'white')
-	input_display.grid(row = 2, column = 1)
-	
-	global list_display
-	list_display = tk.Text(add_window, height = 10, width = 25, bg = 'yellow', fg = 'black')
-	list_display.grid(row = 2, column = 3) 
-	
-	global key_pers_display
-	key_pers_display = tk.Text(add_window, height = 10, width = 50, bg = 'black', fg = 'white')
-	key_pers_display.grid(row = 4, column = 2)
-
-	add_window.mainloop()
-			
-
+		
 #Main Menu
 menu = tk.Tk()
 def option_1():
@@ -648,52 +524,25 @@ def option_1():
 
 def option_2():
 	scan_app()
-
-def option_3():
-	messagebox.showinfo('Checks', 'Running Checks...')
-	email_update()
-
-def option_4():
-	#Clean lingering files
-	#If alerts are already cleared
-	if os.path.isfile('former.txt') == False and os.path.isfile('alerts.txt') == False and os.path.isfile('sci_alerts.txt') == False:
-		messagebox.showerror('No Alerts', 'Alerts already cleared.')
-	if os.path.isfile('former.txt'):
-		messagebox.showinfo('Former Cleared', 'Cleared Former Employee List')
-		os.remove('former.txt')
-	if os.path.isfile('alerts.txt'):
-		messagebox.showinfo('KP Cleared', 'Cleared Key Personnel Alerts')
-		os.remove('alerts.txt')
-	if os.path.isfile('sci_alerts.txt'):
-		messagebox.showinfo('Science Cleared', 'Cleared Science Alerts')
-		os.remove('sci_alerts.txt')
-
-def option_5():
-	add_app()
 	
-def option_6():
+def option_3():
 	messagebox.showinfo(title = 'Quitting', message = 'Thank you. Goodbye.')
 	sys.exit()
 
 menu.title('CITI UPDATE CENTER')
-menu_info = tk.Label(menu, text = 'CITI UPDATE CENTER \n Center for Policing Equity OHRP \n v.1.3 \n', width = 75, height = 4, bg = 'green', fg = 'white')
+menu_info = tk.Label(menu, text = 'CITI UPDATE CENTER \n Center for Policing Equity OHRP \n v.2.0 \n', width = 75, height = 4, bg = 'green', fg = 'white')
 label_menu = tk.Label(menu, text = 'Please select one of the following options:', width = 75, height = 4, bg = "black", fg = "white")
 menu.geometry('500x300')
 menu.config(background = 'white')
 op_1 = tk.Button(menu, text = 'Scan CITI Certificates', width = 25, command = option_1)
 op_2 = tk.Button(menu, text = 'Update CITI Statuses', width = 25, command = option_2)
-op_3 = tk.Button(menu, text = 'Email Updates', width = 25, command = option_3)
-op_4 = tk.Button(menu, text = 'Clear Old Alerts', width = 25, bg = 'red', command = option_4)
-op_5 = tk.Button(menu, text = 'Add Key Personnel', width = 25, command = option_5)
-op_6 = tk.Button(menu, text = 'Exit', width = 25, command = option_6)
+op_3 = tk.Button(menu, text = 'Exit', width = 25, command = option_3)
 
 menu_info.grid(column = 1, row = 1)
 label_menu.grid(column = 1, row = 2)
 op_1.grid(column = 1, row = 3)
 op_2.grid(column = 1, row = 4)
 op_3.grid(column = 1, row = 5)
-op_4.grid(column = 1, row = 6)
-op_5.grid(column = 1, row = 7)
-op_6.grid(column = 1, row = 8)
+
 
 menu.mainloop()
