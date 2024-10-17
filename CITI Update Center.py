@@ -36,7 +36,7 @@ sci_alerts_expired = []
 #Splash
 messagebox.showinfo(title = 'Starting...', message = 'Pulling CITI Sheet Data')
 # configurations
-spreadsheet_id = '1O4iyxmAwX3OCClhac2vzyeDStG-FoWeGLteYss6R2xo'
+spreadsheet_id = '1XaSGwol8WqkezhNDhruM8P_EA64tTQawHaw1mzeSgcU'
 with open('api.key', 'r') as file:
 	api_key = file.read().rstrip()
 sheet_name = "Certificate Record"
@@ -47,7 +47,7 @@ gc = gspread.service_account(filename = 'creds.json')
 gs = gc.open_by_key(spreadsheet_id)
 
 if gs:
-	messagebox.showinfo(title = 'Initializing...', message = 'Certificate Record Found, Attempting Fetch')
+	messagebox.showinfo(title = 'Initializing...', message = 'Certificate Record Found. \nFetching Data...')
 	try:
    		gc = gspread.service_account(filename = 'creds.json')
    		gs = gc.open_by_key(spreadsheet_id)
@@ -55,9 +55,7 @@ if gs:
 	except Exception as e:
 		messagebox.showerror(title = 'Failure', message = f"Error: {e}")
 else:
-    messagebox.showerror(title = 'Failure', message = "Failed to fetch data from Google Sheets API.\n Please check your Internet connection.")
-
-
+    messagebox.showerror(title = 'Failure', message = "Failed to start CITI Update Center.\n Please check your Internet connection.")
 
 #Child Windows and Functions
 def citi_cert_scan():
@@ -214,7 +212,7 @@ def cert_app():
 		cert_window.destroy()
 	##Info
 	cert_window.title('CITI Certificate Scraper')
-	cert_app_info = tk.Label(cert_window, text = 'CITI Certificate Scraper \n Center for Policing Equity OHRP \n v.1.7 \n', width = 100, height = 4, bg = 'green', fg = 'white')
+	cert_app_info = tk.Label(cert_window, text = 'CITI Certificate Scraper \n Center for Policing Equity OHRP \n v.2.0 \n', width = 100, height = 4, bg = 'green', fg = 'white')
 	cert_app_scan_head = tk.Label(cert_window, text = 'Scanned Certificates:', width = 100, height = 4, bg = 'black', fg = 'white')
 	cert_app_info.pack()
 	##Input Frame
@@ -311,7 +309,7 @@ def sel():
 		def hsr_expired(val):
 			"""Checks if latest HSR certificates on file are expired"""
 			now = dt.date.today()
-			current_certs['exp_date'] = pd.to_datetime(current_certs['exp_date'], dayfirst = True, format = "%d-%b-%y")
+			current_certs['exp_date'] = pd.to_datetime(current_certs['exp_date'], dayfirst = False, format = "%m/%d/%Y")
 			latest_hsr = current_certs[current_certs['group']=='HSR for Social & Behavioral Faculty, Graduate Students & Postdoctoral Scholars'].groupby('recipient_name')['exp_date'].max()
 			latest_hsr = latest_hsr.reset_index()
 			try:
@@ -322,7 +320,7 @@ def sel():
 		def rcr_expired(val):
 			"""Checks if latest RCR certificates on file are expired"""
 			now = dt.date.today()
-			current_certs['exp_date'] = pd.to_datetime(current_certs['exp_date'], format = "%d-%b-%y")
+			current_certs['exp_date'] = pd.to_datetime(current_certs['exp_date'], format = "%m/%d/%Y")
 			latest_rcr = current_certs[current_certs['group']=='Responsible Conduct of Research (RCR)'].groupby('recipient_name')['exp_date'].max()
 			latest_rcr = latest_rcr.reset_index()
 			try:
@@ -435,31 +433,46 @@ def sel():
 			gs.add_worksheet('Expired', 3, 3)
 			expired_sheet = gs.worksheet('Expired')
 			expired_sheet.clear()
+
+		
 		if alerts_missing:
 				missing_sheet.batch_update([{'range' :'A2', 'values': [alerts_missing], 'majorDimension': 'COLUMNS',}])
 		else:
 			alerts_missing.append('No Missing Certifications (Key Personnel)')
 			missing_sheet.batch_update([{'range' : 'A2', 'values': [alerts_missing], 'majorDimension': 'COLUMNS',}])
-			missing_info.insert('No Missing Certifications (Key Personnel)')
+			missing_info.insert(0, 'No Missing Certifications (Key Personnel)')
+
 		if alerts_expired:
 			expired_sheet.batch_update([{'range': 'A2', 'values': [alerts_expired], 'majorDimension': 'COLUMNS',}])
 		else:
 			alerts_expired.append('No Expired Certifications (Key Personnel)')
 			expired_sheet.batch_update([{'range' : 'A2', 'values': [alerts_expired], 'majorDimension': 'COLUMNS',}])
-			expired_info.insert('No Expired Certifications (Key Personnel)')
+			expired_info.insert(0, 'No Expired Certifications (Key Personnel)')
+
+
 
 		if sci_alerts_missing:
-			missing_sheet.append_rows(sci_alerts_missing, value_input_option = 'USER_ENTERED')
+			missing_sheet.batch_update([{'range' :'C2', 'values': [sci_alerts_missing], 'majorDimension': 'COLUMNS',}])
 		else:
 			sci_alerts_missing.append('No Missing Certifications (Science)')
-			missing_sheet.append_rows(sci_alerts_missing, value_input_option = 'USER_ENTERED')
-			missing_info.insert('No Missing Certifications (Science)')
+			missing_sheet.batch_update([{'range' : 'C2', 'values': [sci_alerts_missing], 'majorDimension': 'COLUMNS',}])
+			missing_info.insert(0, 'No Missing Certifications (Science)')
+
 		if sci_alerts_expired:
-			expired_sheet.append_rows(sci_alerts_expired, value_input_option = 'USER_ENTERED')
+			expired_sheet.batch_update([{'range': 'C2', 'values': [sci_alerts_expired], 'majorDimension': 'COLUMNS',}])
 		else:
 			sci_alerts_expired.append('No Expired Certifications (Science)')
-			expired_sheet.append_rows(sci_alerts_expired, value_input_option = 'USER_ENTERED')
-			expired_info.insert(num, 'No Missing Certifications (Science)')
+			expired_sheet.batch_update([{'range' : 'C2', 'values': [sci_alerts_expired], 'majorDimension': 'COLUMNS',}])
+			expired_info.insert(0, 'No Missing Certifications (Science)')
+
+		## Label Sheet Columns
+		missing_sheet.update_cell(1,1, 'Key Personnel')
+		missing_sheet.update_cell(1,3, 'Science')
+		expired_sheet.update_cell(1,1, 'Key Personnel')
+		expired_sheet.update_cell(1,3, 'Science')
+
+		#Finish	
+		messagebox.showinfo(title = 'Success', message = 'Records Updated')
 
 def scan_app():
 	#Main window
@@ -471,7 +484,7 @@ def scan_app():
 	def exit_command():
 		scan_window.destroy()
 	#Missing Info
-	scan_app_info = tk.Label(scan_window, text = 'CITI Employee Search Tool \n Center for Policing Equity OHRP \n v.1.7 \n', width = 100, height = 4, bg = 'green', fg = 'white')
+	scan_app_info = tk.Label(scan_window, text = 'CITI Employee Search Tool \n Center for Policing Equity OHRP \n v.2.0 \n', width = 100, height = 4, bg = 'green', fg = 'white')
 	frm_missing = tk.Frame(scan_window, relief = 'sunken', width = 100)
 	missing_head = tk.Label(frm_missing, text = 'MISSING CERTIFICATIONS', width = 100, height = 4, bg = "black", fg = "white")
 	global missing_info
