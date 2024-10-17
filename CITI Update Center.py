@@ -1,3 +1,8 @@
+# CITI Update Center
+# v.2.0
+# Center for Policing Equity
+# Written by: Jonathan LLoyd
+#Last Updated: 10/17/2024
 #Libraries
 import tkinter as tk
 import io
