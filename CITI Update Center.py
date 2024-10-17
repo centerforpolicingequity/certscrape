@@ -345,6 +345,9 @@ def sel():
 
 		#Apply key personnel label:
 		final_frame['key_pers'] = final_frame['recipient_name'].isin(key_personnel)
+		emp_status = gs.worksheet('Employee Status')
+		emp_status.clear()
+		set_with_dataframe(emp_status, final_frame)
 
 		
 
