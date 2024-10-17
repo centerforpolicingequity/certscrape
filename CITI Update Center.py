@@ -33,26 +33,8 @@ key_personnel = []
 sci_alerts_missing = []
 sci_alerts_expired = []
 
+#Splash
 messagebox.showinfo(title = 'Starting...', message = 'Pulling CITI Sheet Data')
-
-def get_google_sheet_data(spreadsheet_id,sheet_name, api_key):
-    # Construct the URL for the Google Sheets API
-    url = f'https://sheets.googleapis.com/v4/spreadsheets/{spreadsheet_id}/values/{sheet_name}!A1:Z?alt=json&key={api_key}'
-
-    try:
-        # Make a GET request to retrieve data from the Google Sheets API
-        response = requests.get(url)
-        response.raise_for_status()  # Raise an exception for HTTP errors
-
-        # Parse the JSON response
-        data = response.json()
-        return data
-
-    except requests.exceptions.RequestException as e:
-        # Handle any errors that occur during the request
-        messagebox.showerror(title = 'Initialize Fail', message = f"An error occurred: {e}")
-        return None
-
 # configurations
 spreadsheet_id = '1O4iyxmAwX3OCClhac2vzyeDStG-FoWeGLteYss6R2xo'
 with open('api.key', 'r') as file:
@@ -61,9 +43,10 @@ sheet_name = "Certificate Record"
 
 scopes = ["https://spreadsheets.google.com/feeds",'https://www.googleapis.com/auth/spreadsheets',"https://www.googleapis.com/auth/drive.file","https://www.googleapis.com/auth/drive"]
 creds = Credentials.from_service_account_file('creds.json', scopes = scopes)
-sheet_data = get_google_sheet_data(spreadsheet_id,sheet_name, api_key)
+gc = gspread.service_account(filename = 'creds.json')
+gs = gc.open_by_key(spreadsheet_id)
 
-if sheet_data:
+if gs:
 	messagebox.showinfo(title = 'Initializing...', message = 'Certificate Record Found, Attempting Fetch')
 	try:
    		gc = gspread.service_account(filename = 'creds.json')
@@ -219,7 +202,6 @@ def citi_cert_scan():
 	frame = pd.DataFrame(list(zip(lst, lst2, lst2_b, lst2_a, lst3, lst4, lst5)), columns = cols )
 	cert_info.insert(num, '\n Appending to Google Sheet...')
 	frame_values = frame.values.tolist()
-	print(frame_values)
 	cert_sheet.append_rows(frame_values, value_input_option = 'USER_ENTERED')
 	messagebox.showinfo(title = 'Success', message =f'{len(frame_values)} rows added to CITI Certifaction Record')
 
@@ -285,9 +267,12 @@ def sel():
 			sys.exit(0)
 
 		### Adjusting Names
-		name_scrape = pd.read_csv('general_bamboohr_org_chart.csv')['Name'].str.upper().tolist()
+		employee_sheet = gs.get_worksheet(4)
+		employee_data = employee_sheet.get_all_values()
+		name_scrape = list(chain.from_iterable(employee_data))
 		for i in name_scrape:
-			name_split = i.split() 
+			u = i.upper()
+			name_split = u.split() 
 			if len(name_split) == 2:
 				name_first = name_split[0][:1]+'.'
 				name_last = (name_split[1].strip())
@@ -358,8 +343,7 @@ def sel():
 		#Apply key personnel label:
 		final_frame['key_pers'] = final_frame['recipient_name'].isin(key_personnel)
 
-		framename= 'citi_records.csv'
-		final_frame.to_csv(framename, header = True, index = False)
+		
 
 		# Results output
 		for index, row in final_frame.iterrows():
@@ -436,47 +420,46 @@ def sel():
 					pass
 			else:
 				pass
-		# Write Report
-		if alerts_missing or alerts_expired:
-			with open('alerts.txt', 'w') as file:
-				file.write('KEY PERSONNEL ALERTS')
-				file.write('\n')
-				file.write('='*10)
-				file.write('MISSING CERTIFICATIONS AS OF ' + dt.date.today().strftime("%Y-%m-%d"))
-				file.write('='*10 + '\n')
-				if alerts_missing:
-					for alert in alerts_missing:
-						file.write('%s\n' % alert)
-				else:
-					file.write('No Missing Certifications \n')
-				file.write('='*10)
-				file.write('EXPIRED CERTIFICATIONS AS OF ' + dt.date.today().strftime("%Y-%m-%d"))
-				file.write('='*10 + '\n')
-				if alerts_expired:
-					for alert in alerts_expired:
-						file.write('%s\n' % alert)
-				else:
-					file.write('No Expired Certifications \n')
-		if sci_alerts_missing or sci_alerts_expired:
-			with open('sci_alerts.txt', 'w') as file:
-				file.write('SCIENCE TEAM ALERTS')
-				file.write('\n')
-				file.write('='*10)
-				file.write('MISSING CERTIFICATIONS AS OF ' + dt.date.today().strftime("%Y-%m-%d"))
-				file.write('='*10 + '\n')
-				if sci_alerts_missing:
-					for alert in sci_alerts_missing:
-						file.write('%s\n' % alert)
-				else:
-					file.write('No Missing Certifications \n')
-				file.write('='*10)
-				file.write('EXPIRED CERTIFICATIONS AS OF ' + dt.date.today().strftime("%Y-%m-%d"))
-				file.write('='*10 + '\n')
-				if sci_alerts_expired:
-					for alert in sci_alerts_expired:
-						file.write('%s\n' % alert)
-				else:
-					file.write('No Expired Certifications \n')
+		# Write Reports
+		try: 
+			missing_sheet = gs.worksheet('Missing')
+			missing_sheet.clear()
+		except:
+			gs.add_worksheet('Missing', 3, 3)
+			missing_sheet = gs.worksheet('Missing')
+			missing_sheet.clear()
+		try:
+			expired_sheet = gs.worksheet('Expired')
+			expired_sheet.clear()
+		except:
+			gs.add_worksheet('Expired', 3, 3)
+			expired_sheet = gs.worksheet('Expired')
+			expired_sheet.clear()
+		if alerts_missing:
+				missing_sheet.batch_update([{'range' :'A2', 'values': [alerts_missing], 'majorDimension': 'COLUMNS',}])
+		else:
+			alerts_missing.append('No Missing Certifications (Key Personnel)')
+			missing_sheet.batch_update([{'range' : 'A2', 'values': [alerts_missing], 'majorDimension': 'COLUMNS',}])
+			missing_info.insert('No Missing Certifications (Key Personnel)')
+		if alerts_expired:
+			expired_sheet.batch_update([{'range': 'A2', 'values': [alerts_expired], 'majorDimension': 'COLUMNS',}])
+		else:
+			alerts_expired.append('No Expired Certifications (Key Personnel)')
+			expired_sheet.batch_update([{'range' : 'A2', 'values': [alerts_expired], 'majorDimension': 'COLUMNS',}])
+			expired_info.insert('No Expired Certifications (Key Personnel)')
+
+		if sci_alerts_missing:
+			missing_sheet.append_rows(sci_alerts_missing, value_input_option = 'USER_ENTERED')
+		else:
+			sci_alerts_missing.append('No Missing Certifications (Science)')
+			missing_sheet.append_rows(sci_alerts_missing, value_input_option = 'USER_ENTERED')
+			missing_info.insert('No Missing Certifications (Science)')
+		if sci_alerts_expired:
+			expired_sheet.append_rows(sci_alerts_expired, value_input_option = 'USER_ENTERED')
+		else:
+			sci_alerts_expired.append('No Expired Certifications (Science)')
+			expired_sheet.append_rows(sci_alerts_expired, value_input_option = 'USER_ENTERED')
+			expired_info.insert(num, 'No Missing Certifications (Science)')
 
 def scan_app():
 	#Main window
@@ -499,15 +482,7 @@ def scan_app():
 	global expired_info
 	expired_info = tk.Listbox(frm_expired, bg = "yellow", fg = "black", width = 100)
 	#Main Window display
-	#global initialize
-	#initialize = tk.StringVar(scan_window, value = 'None')
-	#label_app = tk.Label(scan_window, text = 'Is there already an up-to-date copy of citi_records.csv?', width = 100, height = 4, bg = "white", fg = "black")
-	#label_app.grid(column = 1, row = 2)
-	#first_time_yes = tk.Radiobutton(frm_missing, text = "Yes", fg = "black", variable = initialize, value = 'Y')
-	#first_time_no = tk.Radiobutton(frm_missing, text = "No", fg = "black", variable = initialize, value = 'N')
 	confirm = tk.Button(scan_window, text = 'Scan', command = sel)
-	#first_time_yes.pack()
-	#first_time_no.pack()
 	#Missing Window Display
 	missing_head.pack(side = 'top')
 	missing_info.pack(side = 'bottom')
@@ -523,107 +498,7 @@ def scan_app():
 	exit_button = tk.Button(scan_window, text = 'Exit', width = 75, command = exit_command)
 	exit_button.grid(row = 6, column = 1)
 	scan_window.mainloop()
-
-
-def add_key_pers():
-	x_team = []
-	key_list = []
-	add_list = []
-
-	global input_file
-	input_file = file_input.get()
-	global keypers_file
-	keypers_file = file_keypers.get()
-
-	try:
-		with open(input_file, 'r') as team:
-			for line in team:
-				x_team.append(line.strip('\n'))
-			team.close()
-	except FileNotFoundError:
-		messagebox.showerror('Input File Missing', 'Please select a file of personnel to be added.')
-
-	try:
-		with open(keypers_file, 'r') as key_file:
-			for line in key_file:
-				key_list.append(line.strip('\n'))
-			key_file.close()
-	except FileNotFoundError:
-		messagebox.showerror('Key Personnel File Missing', 'Please select a file for existing key personnel.')
-
-	if x_team:
-			for name in x_team:
-				if key_list:
-					if name not in key_list:
-						key_pers_display.insert('end', '֎  ' + name + ': Added \n')
-						add_list.append(name)
-					else:
-						key_pers_display.insert('end', '⁐  ' + name + ': Present \n')
-	else:
-		key_pers_display.insert('end', 'Information missing. \n')
-
-	if add_list:
-		with open(keypers_file, 'a') as output:
-				for name in add_list:
-					output.write('\n' + name + '\n')
-
-def add_app():
-	global add_window
-	global file_input
-	file_input = tk.StringVar()
-	global file_keypers
-	file_keypers = tk.StringVar()
-	add_window= tk.Toplevel()
-	add_window.configure(background = "white")
-	add_window.geometry('800x500')
-	add_window.title('Key Personnel Tool')
-
-	def select_file_input():
-		input_path = fd.askopenfilename(title = "Personnel to be Added", filetypes =[("List files", "*.list"), ("All files", "*")])
-		if input_path:
-			with open(input_path, 'r') as file:
-				content = file.read()
-				input_display.insert('end', content)
-				file.close()
-		file_input.set(input_path)
-
-	def select_file_keypers():
-		keypers_path = fd.askopenfilename(title = "Key Personnel File", filetypes =[("List files", "*.list"), ("All files", "*")])
-		if keypers_path:
-			with open(keypers_path, 'r') as file:
-				content = file.read()
-				list_display.insert('end', content)
-				file.close()
-		file_keypers.set(keypers_path)
-	def exit_command():
-		add_window.destroy()	
-
-	file_select_input = tk.Button(add_window, text = 'Addition List', width = 25, command = select_file_input)
-	file_select_input.grid(row = 1, column = 1)
-	file_select_keypers = tk.Button(add_window, text = 'Key Personnel File', width = 25, command = select_file_keypers)
-	file_select_keypers.grid(row = 1, column = 3)
-	
-	add_button = tk.Button(add_window, text = 'Add', bg = 'green', width = 25, command = add_key_pers)
-	add_button.grid(row = 2, column = 2)
-	
-	exit_button = tk.Button(add_window, text = 'Exit', width = 25, command = exit_command)
-	exit_button.grid(row = 3, column = 2)
-	
-	global input_display
-	input_display = tk.Text(add_window, height = 10, width = 25, bg = 'purple', fg = 'white')
-	input_display.grid(row = 2, column = 1)
-	
-	global list_display
-	list_display = tk.Text(add_window, height = 10, width = 25, bg = 'yellow', fg = 'black')
-	list_display.grid(row = 2, column = 3) 
-	
-	global key_pers_display
-	key_pers_display = tk.Text(add_window, height = 10, width = 50, bg = 'black', fg = 'white')
-	key_pers_display.grid(row = 4, column = 2)
-
-	add_window.mainloop()
-			
-
+		
 #Main Menu
 menu = tk.Tk()
 def option_1():
@@ -631,39 +506,25 @@ def option_1():
 
 def option_2():
 	scan_app()
-
-def option_3():
-	messagebox.showwarning('DEPRECEATED', 'This feature is being removed.')
-
-def option_4():
-	messagebox.showwarning('DEPRECEATED', 'This feature is being removed.')
-
-def option_5():
-	add_app()
 	
-def option_6():
+def option_3():
 	messagebox.showinfo(title = 'Quitting', message = 'Thank you. Goodbye.')
 	sys.exit()
 
 menu.title('CITI UPDATE CENTER')
-menu_info = tk.Label(menu, text = 'CITI UPDATE CENTER \n Center for Policing Equity OHRP \n v.1.3 \n', width = 75, height = 4, bg = 'green', fg = 'white')
+menu_info = tk.Label(menu, text = 'CITI UPDATE CENTER \n Center for Policing Equity OHRP \n v.2.0 \n', width = 75, height = 4, bg = 'green', fg = 'white')
 label_menu = tk.Label(menu, text = 'Please select one of the following options:', width = 75, height = 4, bg = "black", fg = "white")
 menu.geometry('500x300')
 menu.config(background = 'white')
 op_1 = tk.Button(menu, text = 'Scan CITI Certificates', width = 25, command = option_1)
 op_2 = tk.Button(menu, text = 'Update CITI Statuses', width = 25, command = option_2)
-op_3 = tk.Button(menu, text = 'Email Updates', width = 25, command = option_3)
-op_4 = tk.Button(menu, text = 'Clear Old Alerts', width = 25, bg = 'red', command = option_4)
-op_5 = tk.Button(menu, text = 'Add Key Personnel', width = 25, command = option_5)
-op_6 = tk.Button(menu, text = 'Exit', width = 25, command = option_6)
+op_3 = tk.Button(menu, text = 'Exit', width = 25, command = option_3)
 
 menu_info.grid(column = 1, row = 1)
 label_menu.grid(column = 1, row = 2)
 op_1.grid(column = 1, row = 3)
 op_2.grid(column = 1, row = 4)
 op_3.grid(column = 1, row = 5)
-op_4.grid(column = 1, row = 6)
-op_5.grid(column = 1, row = 7)
-op_6.grid(column = 1, row = 8)
+
 
 menu.mainloop()
