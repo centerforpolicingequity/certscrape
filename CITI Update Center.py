@@ -2,7 +2,7 @@
 # v.2.0
 # Center for Policing Equity
 # Written by: Jonathan LLoyd
-#Last Updated: 10/17/2024
+#Last Updated: 10/23/2024
 #Libraries
 import tkinter as tk
 import io
@@ -289,14 +289,7 @@ def sel():
 		current_employees = set(chart)
 		all_recipients = set(certs['recipient_name'])
 		missing_employees = all_recipients - current_employees
-		if missing_employees:
-			with open('former.txt', 'w') as file:
-				file.write('GENERAL ALERTS')
-				file.write('\n')
-				file.write('The following employees may no longer work at CPE as of ' + dt.date.today().strftime("%Y-%m-%d") + '\n')
-				file.write('='*60 + '\n')
-				for name in missing_employees:
-					file.write('%s\n' % name)
+		missing_employees = list(missing_employees)
 
 		current_certs = certs[certs['recipient_name'].isin(current_employees)]
 		final_frame= pd.DataFrame(current_employees, columns = ['recipient_name'])
@@ -441,6 +434,13 @@ def sel():
 			gs.add_worksheet('Expired', 3, 3)
 			expired_sheet = gs.worksheet('Expired')
 			expired_sheet.clear()
+		try: 
+			former_sheet = gs.worksheet('Former')
+			former_sheet.clear()
+		except:
+			gs.add_worksheet('Former', 3, 3)
+			former_sheet = gs.worksheet('Former')
+			former_sheet.clear()
 
 		
 		if alerts_missing:
@@ -473,11 +473,18 @@ def sel():
 			expired_sheet.batch_update([{'range' : 'C2', 'values': [sci_alerts_expired], 'majorDimension': 'COLUMNS',}])
 			expired_info.insert(0, 'No Missing Certifications (Science)')
 
+
+		if missing_employees:
+			messagebox.showinfo('Former Employees', 'Some employees listed may no longer be with CPE.\nPlease check the Google Sheet for details.')
+			former_sheet.batch_update([{'range' : 'A2', 'values': [missing_employees], 'majorDimension': 'COLUMNS',}])
+
+
 		## Label Sheet Columns
 		missing_sheet.update_cell(1,1, 'Key Personnel')
 		missing_sheet.update_cell(1,3, 'Science')
 		expired_sheet.update_cell(1,1, 'Key Personnel')
 		expired_sheet.update_cell(1,3, 'Science')
+		former_sheet.update_cell(1,1, 'The following employees may no longer work at CPE:')
 
 		#Finish	
 		messagebox.showinfo(title = 'Success', message = 'Records Updated')
