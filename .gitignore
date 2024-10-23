@@ -1,3 +1,4 @@
 api.key
 creds.json
 /certificates/
+*.ico
