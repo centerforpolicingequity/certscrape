@@ -2,7 +2,7 @@
 # v.2.0
 # Center for Policing Equity
 # Written by: Jonathan LLoyd
-#Last Updated: 10/23/2024
+#Last Updated: 10/27/2024
 #Libraries
 import tkinter as tk
 import io
@@ -42,14 +42,17 @@ sci_alerts_expired = []
 messagebox.showinfo(title = 'Starting...', message = 'Pulling CITI Sheet Data')
 # configurations
 spreadsheet_id = '1XaSGwol8WqkezhNDhruM8P_EA64tTQawHaw1mzeSgcU'
-with open('api.key', 'r') as file:
-	api_key = file.read().rstrip()
-sheet_name = "Certificate Record"
-
-scopes = ["https://spreadsheets.google.com/feeds",'https://www.googleapis.com/auth/spreadsheets',"https://www.googleapis.com/auth/drive.file","https://www.googleapis.com/auth/drive"]
-creds = Credentials.from_service_account_file('creds.json', scopes = scopes)
-gc = gspread.service_account(filename = 'creds.json')
-gs = gc.open_by_key(spreadsheet_id)
+try:
+	with open('api.key', 'r') as file:
+		api_key = file.read().rstrip()
+	sheet_name = "Certificate Record"
+	scopes = ["https://spreadsheets.google.com/feeds",'https://www.googleapis.com/auth/spreadsheets',"https://www.googleapis.com/auth/drive.file","https://www.googleapis.com/auth/drive"]
+	creds = Credentials.from_service_account_file('creds.json', scopes = scopes)
+	gc = gspread.service_account(filename = 'creds.json')
+	gs = gc.open_by_key(spreadsheet_id)
+except:
+	messagebox.showerror(title = 'Failure', message = "Failed to start CITI Update Center.\nPlease check your Internet connection.")
+	sys.exit()
 
 if gs:
 	messagebox.showinfo(title = 'Initializing...', message = 'Certificate Record Found. \nFetching Data...')
@@ -60,7 +63,8 @@ if gs:
 	except Exception as e:
 		messagebox.showerror(title = 'Failure', message = f"Error: {e}")
 else:
-    messagebox.showerror(title = 'Failure', message = "Failed to start CITI Update Center.\n Please check your Internet connection.")
+    messagebox.showerror(title = 'Failure', message = "Failed to start CITI Update Center.\nPlease check your Internet connection.")
+    sys.exit()
 
 #Child Windows and Functions
 def citi_cert_scan():
@@ -529,6 +533,7 @@ def scan_app():
 		
 #Main Menu
 menu = tk.Tk()
+menu.iconbitmap("newspaper-regular.ico")
 def option_1():
 	cert_app()
 
