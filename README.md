@@ -27,32 +27,15 @@ This scraper is mainly for IRB use to document who has what CITI certification a
 
 **Update CITI Status** 
 
-Scans the current list of employees from BambooHR and compares it to the list of members of the Science Team, those listed as Key Personnel, and all names listed within the log of CITI certificates. It then generates up to four files:
+Scans the current list of employees from BambooHR and compares it to the list of members of the Science Team, those listed as Key Personnel, and all names listed within the log of CITI certificates. It then updates a Google Sheet.
 
-	1. former.txt - a list of personnel who are listed within the CITI log but not the current employee list, indicating that the respective employees may no longer be with CPE.
-
-	2. alerts.txt - a list of employees listed as Key Personnel on one or more projects who are either missing required CITI certificates or else have expired certificates. 
-
-	3. sci_alerts.txt - a list of employees listed as members of the Science division who are either missing required CITI certificates or else have expired certificates.
-
-	4. citi_records.csv - a table of employees listing their name, whether they have required certificates, if those certificates are expired, if they are listed as key personnel, and if they are listed as members of the Science division.
-
-**Email Updates**
-
-Uses the Gmail API to combine and email alert files to the CPE OHRP email. Typically run on a weekly basis for update purposes.
-
-**Add Key Personnel**
-
-Adds needed personnel (e.g. science_team.list) to file of key personnel (e.g. key_personnel.list).
 
 Other required files:
 
-	key_personnel.list - a plaintext file listing employees who are considered Key Personnel on one or more projects.
+	certificates - folder that the script searches for PDF files within.
+	
+	api.key - key for the Google API.
 
-	science_team.list -a plaintext file listing employees who are members of the Science division.
+	creds.json - credentials for accessing the Google API. 
 
-	credentials.json - credentials for accessing the Gmail API. 
-
-	general_bamboohr_org_chart.csv - A list of employees downloaded from the "People" directory on BambooHR.
-
-	quickstart.py - a script for initial setup of the Gmail API.
+	spreadsheet.key - spreadsheet ID.
