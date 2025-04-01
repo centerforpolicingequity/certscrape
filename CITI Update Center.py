@@ -41,7 +41,8 @@ sci_alerts_expired = []
 #Splash
 messagebox.showinfo(title = 'Starting...', message = 'Pulling CITI Sheet Data')
 # configurations
-spreadsheet_id = '1XaSGwol8WqkezhNDhruM8P_EA64tTQawHaw1mzeSgcU'
+with open('spreadsheet.key', 'r') as file:
+	spreadsheet_id = file.read().rstrip()
 try:
 	with open('api.key', 'r') as file:
 		api_key = file.read().rstrip()
@@ -239,7 +240,7 @@ def cert_app():
 	cert_window.mainloop()
 
 def sel():
-		"""Runs a scan of CITI Certificates after being selected by radio button"""
+		"""Runs a scan of CITI Certificates after being selected"""
 		#global selection
 		global certs
 		#selection = str(initialize.get())
