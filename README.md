@@ -23,7 +23,7 @@ In the event that the CITI Record Number cannot be found, the script records the
 
 *Please Note:* The scraper is designed to scrape CERTIFICATES, not full records. Trying to scrape the full record PDF will result in missing and/or distorted information.
 
-This scraper is mainly for IRB use to document who has what CITI certification and set up monitoring. Outputs a log of CITI Certificates labeled 'citi.csv'.
+This scraper is mainly for IRB use to document who has what CITI certification and set up monitoring.
 
 **Update CITI Status** 
 
