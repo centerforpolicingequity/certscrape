@@ -19,6 +19,9 @@ import base64
 import os.path
 import gspread
 from google.oauth2.service_account import Credentials
+from google_auth_oauthlib.flow import InstalledAppFlow
+from googleapiclient.discovery import build
+from email.mime.text import MIMEText
 from gspread_dataframe import set_with_dataframe
 from pydrive.auth import GoogleAuth
 from pydrive.drive import GoogleDrive
@@ -529,8 +532,39 @@ def sel():
 		expired_sheet.update_cell(1,3, 'Science')
 		former_sheet.update_cell(1,1, 'The following employees may no longer work at CPE:')
 
-		#Finish	
-		messagebox.showinfo(title = 'Success', message = 'Records Updated')
+		#Finish	1/2
+		messagebox.showinfo(title = 'Success 1/2', message = 'Records Updated')
+
+		# Finish 2/2
+		def email_update(sci_alerts_missing, alerts_missing, sci_alerts_expired, alerts_expired):
+		    now = dt.date.today() # Current date/time
+		    message_header = 'For the Office of Human Research Protection:' + '\n' + '*'*60 + '\n'
+		    message_footer = '*'*60 + '\n' + 'Sent from CITI Email Updater' + '\n' + '*'*60
+
+		    SCOPES = [
+		            "https://www.googleapis.com/auth/gmail.send"
+		        ]
+		    flow = InstalledAppFlow.from_client_secrets_file('email.json', SCOPES)
+		    e_creds = flow.run_local_server(port=0)
+
+		    service = build('gmail', 'v1', credentials=e_creds)
+		    missing_email_sci = '\n'.join(str(alert) for alert in sci_alerts_missing)
+		    expired_email_sci = '\n'.join(str(alert) for alert in sci_alerts_expired)
+		    missing_email_key = '\n'.join(str(alert) for alert in alerts_missing)
+		    expired_email_key = '\n'.join(str(alert) for alert in alerts_expired)
+
+		    message = MIMEText(message_header + 'Missing Certifications' + '\n' + missing_email_sci + '\n' + missing_email_key + ('\n' * 3) + 'Expired Certifications' + '\n' + expired_email_sci + '\n' + expired_email_key + '\n' + message_footer)
+		    message['to'] = 'CPEIRB@policingequity.org'
+		    message['subject'] = 'CITI UPDATE:' + ' ' + now.strftime("%m - %d - %Y")
+		    create_message = {'raw': base64.urlsafe_b64encode(message.as_string().encode('UTF-8')).decode('ascii')}
+
+		    try:
+		        message = (service.users().messages().send(userId="me", body=create_message).execute())
+		        messagebox.showinfo('Success 2/2', 'Successfully emailed updates.')
+		    except Exception:
+		        messagebox.showerror('Error','An error occurred. Check logs.')
+		        message = None
+		email_update(sci_alerts_missing, alerts_missing, sci_alerts_expired, alerts_expired)
 
 def scan_app():
 	#Main window
@@ -542,7 +576,7 @@ def scan_app():
 	def exit_command():
 		scan_window.destroy()
 	#Missing Info
-	scan_app_info = tk.Label(scan_window, text = 'CITI Employee Search Tool \n Center for Policing Equity OHRP \n v.2.0 \n', width = 100, height = 4, bg = 'green', fg = 'white')
+	scan_app_info = tk.Label(scan_window, text = 'CITI Employee Search Tool \n Center for Policing Equity OHRP \n v.2.1 \n', width = 100, height = 4, bg = 'green', fg = 'white')
 	frm_missing = tk.Frame(scan_window, relief = 'sunken', width = 100)
 	missing_head = tk.Label(frm_missing, text = 'MISSING CERTIFICATIONS', width = 100, height = 4, bg = "black", fg = "white")
 	global missing_info
@@ -584,7 +618,7 @@ def option_3():
 	sys.exit()
 
 menu.title('CITI UPDATE CENTER')
-menu_info = tk.Label(menu, text = 'CITI UPDATE CENTER \n Center for Policing Equity OHRP \n v.2.0 \n', width = 75, height = 4, bg = 'green', fg = 'white')
+menu_info = tk.Label(menu, text = 'CITI UPDATE CENTER \n Center for Policing Equity OHRP \n v.2.1 \n', width = 75, height = 4, bg = 'green', fg = 'white')
 label_menu = tk.Label(menu, text = 'Please select one of the following options:', width = 75, height = 4, bg = "black", fg = "white")
 menu.geometry('500x300')
 menu.config(background = 'white')
