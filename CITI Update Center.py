@@ -1,8 +1,8 @@
 # CITI Update Center
-# v.2.0
+# v.2.1
 # Center for Policing Equity
 # Written by: Jonathan LLoyd
-#Last Updated: 10/27/2024
+#Last Updated: 06/04/2025 (m/d/y)
 #Libraries
 import tkinter as tk
 import io
@@ -222,7 +222,7 @@ def cert_app():
 		cert_window.destroy()
 	##Info
 	cert_window.title('CITI Certificate Scraper')
-	cert_app_info = tk.Label(cert_window, text = 'CITI Certificate Scraper \n Center for Policing Equity OHRP \n v.2.0 \n', width = 100, height = 4, bg = 'green', fg = 'white')
+	cert_app_info = tk.Label(cert_window, text = 'CITI Certificate Scraper \n Center for Policing Equity OHRP \n v.2.1 \n', width = 100, height = 4, bg = 'green', fg = 'white')
 	cert_app_scan_head = tk.Label(cert_window, text = 'Scanned Certificates:', width = 100, height = 4, bg = 'black', fg = 'white')
 	cert_app_info.pack()
 	##Input Frame
@@ -331,12 +331,38 @@ def sel():
 			except ValueError:
 				return False
 
+		def hsr_30_day(val):
+			"""Checks if latest HSR certificates on file will expire within 30 days"""
+			now = dt.date.today()
+			current_certs['exp_date'] = pd.to_datetime(current_certs['exp_date'], dayfirst = False, format = "%m/%d/%Y")
+			latest_hsr = current_certs[current_certs['group']=='HSR for Social & Behavioral Faculty, Graduate Students & Postdoctoral Scholars'].groupby('recipient_name')['exp_date'].max()
+			latest_hsr = latest_hsr.reset_index()
+			try:
+				thirty_day_flag = now + dt.timedelta(days = 30)
+				return val in latest_hsr[latest_hsr['exp_date'].dt.date < thirty_day_flag]['recipient_name'].tolist()
+			except ValueError:
+				return False
+
+		def rcr_30_day(val):
+			"""Checks if latest RCR certificates on file will expire within 30 days"""
+			now = dt.date.today()
+			current_certs['exp_date'] = pd.to_datetime(current_certs['exp_date'], dayfirst = False, format = "%m/%d/%Y")
+			latest_rcr = current_certs[current_certs['group']=='Responsible Conduct of Research (RCR)'].groupby('recipient_name')['exp_date'].max()
+			latest_rcr = latest_rcr.reset_index()
+			try:
+				thirty_day_flag = now + dt.timedelta(days = 30)
+				return val in latest_rcr[latest_rcr['exp_date'].dt.date < thirty_day_flag]['recipient_name'].tolist()
+			except ValueError:
+				return False
+
 
 		### Check for values
 		final_frame['hsr_val'] = final_frame['recipient_name'].apply(has_hsr)
 		final_frame['rcr_val'] = final_frame['recipient_name'].apply(has_rcr)
 		final_frame['hsr_exp'] = final_frame['recipient_name'].apply(hsr_expired)
 		final_frame['rcr_exp'] = final_frame['recipient_name'].apply(rcr_expired)
+		final_frame['hsr_thirty'] = final_frame['recipient_name'].apply(hsr_30_day)
+		final_frame['rcr_thirty'] = final_frame['recipient_name'].apply(rcr_30_day)
 
 		#Apply science team label:
 		final_frame['sci'] = final_frame['recipient_name'].isin(sci_team)
@@ -404,6 +430,12 @@ def sel():
 					expired_info.insert(exp_num, row['recipient_name'] + ' has an expired HSR certificate. (Science)')
 					exp_num = exp_num + 1
 					sci_alerts_expired.append(row['recipient_name'] + ' | Expired HSR')
+				if row['hsr_exp'] == False and row['hsr_thirty'] == True:
+					sci_alerts_expired.append(row['recipient_name'] + '| Expiring HSR')
+					expired_info.insert(exp_num, row['recipient_name'] + ' has an HSR certificate set to expire in thirty days or less. (Science)')
+				if row['rcr_exp'] == False and row['rcr_thirty'] == True:
+					sci_alerts_expired.append(row['recipient_name'] + '| Expiring RCR')
+					expired_info.insert(exp_num, row['recipient_name'] + ' has an RCR certificate set to expire in thirty days or less. (Science)')
 				else:
 					pass
 			if row['sci'] == False and row['key_pers'] == True:
@@ -420,6 +452,12 @@ def sel():
 					expired_info.insert(exp_num, row['recipient_name'] + ' has an expired HSR certificate. (Key Personnel)')
 					exp_num = exp_num + 1
 					alerts_expired.append(row['recipient_name'] + ' | Expired HSR') 
+				if row['hsr_exp'] == False and row['hsr_thirty'] == True:
+					alerts_expired.append(row['recipient_name'] + '| Expiring HSR')
+					expired_info.insert(exp_num, row['recipient_name'] + ' has an HSR certificate set to expire in thirty days or less. (Key Personnel)')
+				if row['rcr_exp'] == False and row['rcr_thirty'] == True:
+					alerts_expired.append(row['recipient_name'] + '| Expiring RCR')
+					expired_info.insert(exp_num, row['recipient_name'] + ' has an RCR certificate set to expire in thirty days or less. (Key Personnel)')
 				else:
 					pass
 			else:
