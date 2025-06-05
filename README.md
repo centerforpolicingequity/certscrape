@@ -6,7 +6,7 @@ This Python script scans all PDF files in a provided directory (including subdir
 *NEW* GUI Added!
 
 Citi Update Center.py
-Runs the main GUI for the CITI Update Center. From here, a user can select one of five options: Scan CITI Certificates, Update CITI Status, Email the Weekly Update to the CPE OHRP Email, Add Key Personnel, or exit.
+Runs the main GUI for the CITI Update Center. From here, a user can select one of three options: Scan CITI Certificates, Update CITI Status, or exit.
 
 **Scan CITI Certificates**
 
@@ -17,17 +17,17 @@ Compiles the following information from each CITI Certificate read, using a cert
 - Expiration Date
 - Curriculum Group for Certificate (e.g. RCR)
 
-The script then adds all the information into a .CSV file with the appropraite columns. If the scraper cannot find any of the given information, it will note the missing information and place an "NA" entry for that record.
+The script then adds all the information into the CITI Status Google Sheet with the appropraite columns. If the scraper cannot find any of the given information, it will note the missing information and place an "NA" entry for that record.
 
 In the event that the CITI Record Number cannot be found, the script records the PDF filename in its place.
 
 *Please Note:* The scraper is designed to scrape CERTIFICATES, not full records. Trying to scrape the full record PDF will result in missing and/or distorted information.
 
-This scraper is mainly for IRB use to document who has what CITI certification and set up monitoring.
+This scraper is mainly for OHRP use to document who has what CITI certification and set up monitoring.
 
 **Update CITI Status** 
 
-Scans the current list of employees from BambooHR and compares it to the list of members of the Science Team, those listed as Key Personnel, and all names listed within the log of CITI certificates. It then updates a Google Sheet.
+Scans the current list of employees from BambooHR and compares it to the list of members of the Science Team, those listed as Key Personnel, and all names listed within the log of CITI certificates. It then updates a Google Sheet and sends an update email to the CPE OHRP email.
 
 
 Other required files:
@@ -36,6 +36,8 @@ Other required files:
 	
 	api.key - key for the Google API.
 
-	creds.json - credentials for accessing the Google API. 
+	creds.json, email.json - credentials for accessing the Google API. 
+
+	newspaper-regular.ico - Icon for window.
 
 	spreadsheet.key - spreadsheet ID.

@@ -1,8 +1,8 @@
 # CITI Update Center
-# v.2.0
+# v.2.1
 # Center for Policing Equity
 # Written by: Jonathan LLoyd
-#Last Updated: 10/27/2024
+#Last Updated: 06/04/2025 (m/d/y)
 #Libraries
 import tkinter as tk
 import io
@@ -19,6 +19,9 @@ import base64
 import os.path
 import gspread
 from google.oauth2.service_account import Credentials
+from google_auth_oauthlib.flow import InstalledAppFlow
+from googleapiclient.discovery import build
+from email.mime.text import MIMEText
 from gspread_dataframe import set_with_dataframe
 from pydrive.auth import GoogleAuth
 from pydrive.drive import GoogleDrive
@@ -222,7 +225,7 @@ def cert_app():
 		cert_window.destroy()
 	##Info
 	cert_window.title('CITI Certificate Scraper')
-	cert_app_info = tk.Label(cert_window, text = 'CITI Certificate Scraper \n Center for Policing Equity OHRP \n v.2.0 \n', width = 100, height = 4, bg = 'green', fg = 'white')
+	cert_app_info = tk.Label(cert_window, text = 'CITI Certificate Scraper \n Center for Policing Equity OHRP \n v.2.1 \n', width = 100, height = 4, bg = 'green', fg = 'white')
 	cert_app_scan_head = tk.Label(cert_window, text = 'Scanned Certificates:', width = 100, height = 4, bg = 'black', fg = 'white')
 	cert_app_info.pack()
 	##Input Frame
@@ -331,12 +334,38 @@ def sel():
 			except ValueError:
 				return False
 
+		def hsr_30_day(val):
+			"""Checks if latest HSR certificates on file will expire within 30 days"""
+			now = dt.date.today()
+			current_certs['exp_date'] = pd.to_datetime(current_certs['exp_date'], dayfirst = False, format = "%m/%d/%Y")
+			latest_hsr = current_certs[current_certs['group']=='HSR for Social & Behavioral Faculty, Graduate Students & Postdoctoral Scholars'].groupby('recipient_name')['exp_date'].max()
+			latest_hsr = latest_hsr.reset_index()
+			try:
+				thirty_day_flag = now + dt.timedelta(days = 30)
+				return val in latest_hsr[latest_hsr['exp_date'].dt.date < thirty_day_flag]['recipient_name'].tolist()
+			except ValueError:
+				return False
+
+		def rcr_30_day(val):
+			"""Checks if latest RCR certificates on file will expire within 30 days"""
+			now = dt.date.today()
+			current_certs['exp_date'] = pd.to_datetime(current_certs['exp_date'], dayfirst = False, format = "%m/%d/%Y")
+			latest_rcr = current_certs[current_certs['group']=='Responsible Conduct of Research (RCR)'].groupby('recipient_name')['exp_date'].max()
+			latest_rcr = latest_rcr.reset_index()
+			try:
+				thirty_day_flag = now + dt.timedelta(days = 30)
+				return val in latest_rcr[latest_rcr['exp_date'].dt.date < thirty_day_flag]['recipient_name'].tolist()
+			except ValueError:
+				return False
+
 
 		### Check for values
 		final_frame['hsr_val'] = final_frame['recipient_name'].apply(has_hsr)
 		final_frame['rcr_val'] = final_frame['recipient_name'].apply(has_rcr)
 		final_frame['hsr_exp'] = final_frame['recipient_name'].apply(hsr_expired)
 		final_frame['rcr_exp'] = final_frame['recipient_name'].apply(rcr_expired)
+		final_frame['hsr_thirty'] = final_frame['recipient_name'].apply(hsr_30_day)
+		final_frame['rcr_thirty'] = final_frame['recipient_name'].apply(rcr_30_day)
 
 		#Apply science team label:
 		final_frame['sci'] = final_frame['recipient_name'].isin(sci_team)
@@ -404,6 +433,12 @@ def sel():
 					expired_info.insert(exp_num, row['recipient_name'] + ' has an expired HSR certificate. (Science)')
 					exp_num = exp_num + 1
 					sci_alerts_expired.append(row['recipient_name'] + ' | Expired HSR')
+				if row['hsr_exp'] == False and row['hsr_thirty'] == True:
+					sci_alerts_expired.append(row['recipient_name'] + '| Expiring HSR')
+					expired_info.insert(exp_num, row['recipient_name'] + ' has an HSR certificate set to expire in thirty days or less. (Science)')
+				if row['rcr_exp'] == False and row['rcr_thirty'] == True:
+					sci_alerts_expired.append(row['recipient_name'] + '| Expiring RCR')
+					expired_info.insert(exp_num, row['recipient_name'] + ' has an RCR certificate set to expire in thirty days or less. (Science)')
 				else:
 					pass
 			if row['sci'] == False and row['key_pers'] == True:
@@ -420,6 +455,12 @@ def sel():
 					expired_info.insert(exp_num, row['recipient_name'] + ' has an expired HSR certificate. (Key Personnel)')
 					exp_num = exp_num + 1
 					alerts_expired.append(row['recipient_name'] + ' | Expired HSR') 
+				if row['hsr_exp'] == False and row['hsr_thirty'] == True:
+					alerts_expired.append(row['recipient_name'] + '| Expiring HSR')
+					expired_info.insert(exp_num, row['recipient_name'] + ' has an HSR certificate set to expire in thirty days or less. (Key Personnel)')
+				if row['rcr_exp'] == False and row['rcr_thirty'] == True:
+					alerts_expired.append(row['recipient_name'] + '| Expiring RCR')
+					expired_info.insert(exp_num, row['recipient_name'] + ' has an RCR certificate set to expire in thirty days or less. (Key Personnel)')
 				else:
 					pass
 			else:
@@ -491,8 +532,39 @@ def sel():
 		expired_sheet.update_cell(1,3, 'Science')
 		former_sheet.update_cell(1,1, 'The following employees may no longer work at CPE:')
 
-		#Finish	
-		messagebox.showinfo(title = 'Success', message = 'Records Updated')
+		#Finish	1/2
+		messagebox.showinfo(title = 'Success 1/2', message = 'Records Updated')
+
+		# Finish 2/2
+		def email_update(sci_alerts_missing, alerts_missing, sci_alerts_expired, alerts_expired):
+		    now = dt.date.today() # Current date/time
+		    message_header = 'For the Office of Human Research Protection:' + '\n' + '*'*60 + '\n'
+		    message_footer = '*'*60 + '\n' + 'Sent from CITI Email Updater' + '\n' + '*'*60
+
+		    SCOPES = [
+		            "https://www.googleapis.com/auth/gmail.send"
+		        ]
+		    flow = InstalledAppFlow.from_client_secrets_file('email.json', SCOPES)
+		    e_creds = flow.run_local_server(port=0)
+
+		    service = build('gmail', 'v1', credentials=e_creds)
+		    missing_email_sci = '\n'.join(str(alert) for alert in sci_alerts_missing)
+		    expired_email_sci = '\n'.join(str(alert) for alert in sci_alerts_expired)
+		    missing_email_key = '\n'.join(str(alert) for alert in alerts_missing)
+		    expired_email_key = '\n'.join(str(alert) for alert in alerts_expired)
+
+		    message = MIMEText(message_header + 'Missing Certifications' + '\n' + missing_email_sci + '\n' + missing_email_key + ('\n' * 3) + 'Expired Certifications' + '\n' + expired_email_sci + '\n' + expired_email_key + '\n' + message_footer)
+		    message['to'] = 'CPEIRB@policingequity.org'
+		    message['subject'] = 'CITI UPDATE:' + ' ' + now.strftime("%m - %d - %Y")
+		    create_message = {'raw': base64.urlsafe_b64encode(message.as_string().encode('UTF-8')).decode('ascii')}
+
+		    try:
+		        message = (service.users().messages().send(userId="me", body=create_message).execute())
+		        messagebox.showinfo('Success 2/2', 'Successfully emailed updates.')
+		    except Exception:
+		        messagebox.showerror('Error','An error occurred. Check logs.')
+		        message = None
+		email_update(sci_alerts_missing, alerts_missing, sci_alerts_expired, alerts_expired)
 
 def scan_app():
 	#Main window
@@ -504,7 +576,7 @@ def scan_app():
 	def exit_command():
 		scan_window.destroy()
 	#Missing Info
-	scan_app_info = tk.Label(scan_window, text = 'CITI Employee Search Tool \n Center for Policing Equity OHRP \n v.2.0 \n', width = 100, height = 4, bg = 'green', fg = 'white')
+	scan_app_info = tk.Label(scan_window, text = 'CITI Employee Search Tool \n Center for Policing Equity OHRP \n v.2.1 \n', width = 100, height = 4, bg = 'green', fg = 'white')
 	frm_missing = tk.Frame(scan_window, relief = 'sunken', width = 100)
 	missing_head = tk.Label(frm_missing, text = 'MISSING CERTIFICATIONS', width = 100, height = 4, bg = "black", fg = "white")
 	global missing_info
@@ -546,7 +618,7 @@ def option_3():
 	sys.exit()
 
 menu.title('CITI UPDATE CENTER')
-menu_info = tk.Label(menu, text = 'CITI UPDATE CENTER \n Center for Policing Equity OHRP \n v.2.0 \n', width = 75, height = 4, bg = 'green', fg = 'white')
+menu_info = tk.Label(menu, text = 'CITI UPDATE CENTER \n Center for Policing Equity OHRP \n v.2.1 \n', width = 75, height = 4, bg = 'green', fg = 'white')
 label_menu = tk.Label(menu, text = 'Please select one of the following options:', width = 75, height = 4, bg = "black", fg = "white")
 menu.geometry('500x300')
 menu.config(background = 'white')
