@@ -1,8 +1,8 @@
 # CITI Update Center
-# v.2.1
+# v.2.1.1
 # Center for Policing Equity
 # Written by: Jonathan LLoyd
-#Last Updated: 06/04/2025 (m/d/y)
+#Last Updated: 06/05/2025 (m/d/y)
 #Libraries
 import tkinter as tk
 import io
@@ -219,13 +219,14 @@ def citi_cert_scan():
 def cert_app():
 	global cert_window
 	cert_window = tk.Toplevel()
+	cert_window.iconbitmap("newspaper-regular.ico")
 	cert_window.configure(background = 'white')
 	cert_window.geometry('700x500')
 	def exit_command():
 		cert_window.destroy()
 	##Info
 	cert_window.title('CITI Certificate Scraper')
-	cert_app_info = tk.Label(cert_window, text = 'CITI Certificate Scraper \n Center for Policing Equity OHRP \n v.2.1 \n', width = 100, height = 4, bg = 'green', fg = 'white')
+	cert_app_info = tk.Label(cert_window, text = 'CITI Certificate Scraper \n Center for Policing Equity OHRP \n v.2.1.1 \n', width = 100, height = 4, bg = 'green', fg = 'white')
 	cert_app_scan_head = tk.Label(cert_window, text = 'Scanned Certificates:', width = 100, height = 4, bg = 'black', fg = 'white')
 	cert_app_info.pack()
 	##Input Frame
@@ -570,13 +571,14 @@ def scan_app():
 	#Main window
 	global scan_window
 	scan_window= tk.Toplevel()
+	scan_window.iconbitmap("newspaper-regular.ico")
 	scan_window.configure(background = "white")
 	scan_window.geometry('1000x1000')
 	scan_window.title('CITI Employee Search Tool')
 	def exit_command():
 		scan_window.destroy()
 	#Missing Info
-	scan_app_info = tk.Label(scan_window, text = 'CITI Employee Search Tool \n Center for Policing Equity OHRP \n v.2.1 \n', width = 100, height = 4, bg = 'green', fg = 'white')
+	scan_app_info = tk.Label(scan_window, text = 'CITI Employee Search Tool \n Center for Policing Equity OHRP \n v.2.1.1 \n', width = 100, height = 4, bg = 'green', fg = 'white')
 	frm_missing = tk.Frame(scan_window, relief = 'sunken', width = 100)
 	missing_head = tk.Label(frm_missing, text = 'MISSING CERTIFICATIONS', width = 100, height = 4, bg = "black", fg = "white")
 	global missing_info
@@ -618,7 +620,7 @@ def option_3():
 	sys.exit()
 
 menu.title('CITI UPDATE CENTER')
-menu_info = tk.Label(menu, text = 'CITI UPDATE CENTER \n Center for Policing Equity OHRP \n v.2.1 \n', width = 75, height = 4, bg = 'green', fg = 'white')
+menu_info = tk.Label(menu, text = 'CITI UPDATE CENTER \n Center for Policing Equity OHRP \n v.2.1.1 \n', width = 75, height = 4, bg = 'green', fg = 'white')
 label_menu = tk.Label(menu, text = 'Please select one of the following options:', width = 75, height = 4, bg = "black", fg = "white")
 menu.geometry('500x300')
 menu.config(background = 'white')
