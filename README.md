@@ -1,12 +1,7 @@
 # CITI Update Center
+## Current Version: 2.1.1
 
-
-This Python script scans all PDF files in a provided directory (including subdirectories), specifically for CITI Training Certifications. It can also keep an up-to-date log of all CITI certifications held by current employees and those listed as key personnel on CPE projects. 
-
-*NEW* GUI Added!
-
-Citi Update Center.py
-Runs the main GUI for the CITI Update Center. From here, a user can select one of three options: Scan CITI Certificates, Update CITI Status, or exit.
+This Python program scans all PDF files in a provided directory (including subdirectories), specifically for CITI Training Certifications. It can also keep an up-to-date log of all CITI certifications held by current employees and those listed as key personnel on CPE projects. 
 
 **Scan CITI Certificates**
 
@@ -31,12 +26,12 @@ Scans the current list of employees from BambooHR and compares it to the list of
 
 Program Icon: https://icon-icons.com/icon/news-newspaper/177008
 
-Other required files:
+Other requirements:
 
-	certificates - folder that the script searches for PDF files within.
+	/certificates - folder that the script searches for PDF files within.
 	
-	api.key - key for the Google API.
+	api.key - key for the Google API. (Can only be accessed via the OHRP)
 
-	creds.json, email.json - credentials for accessing the Google API. 
+	creds.json, email.json - credentials for accessing the Google API. (Can only be accessed via the OHRP)
 
-	spreadsheet.key - spreadsheet ID.
+	spreadsheet.key - spreadsheet ID. (Can only be accessed via the OHRP)
