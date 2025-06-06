@@ -29,6 +29,7 @@ This scraper is mainly for OHRP use to document who has what CITI certification 
 
 Scans the current list of employees from BambooHR and compares it to the list of members of the Science Team, those listed as Key Personnel, and all names listed within the log of CITI certificates. It then updates a Google Sheet and sends an update email to the CPE OHRP email.
 
+Program Icon: https://icon-icons.com/icon/news-newspaper/177008
 
 Other required files:
 
@@ -37,7 +38,5 @@ Other required files:
 	api.key - key for the Google API.
 
 	creds.json, email.json - credentials for accessing the Google API. 
-
-	newspaper-regular.ico - Icon for window.
 
 	spreadsheet.key - spreadsheet ID.

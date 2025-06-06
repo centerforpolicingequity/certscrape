@@ -2,7 +2,6 @@ api.key
 creds.json
 email.json
 /certificates/
-*.ico
 *.key
 build/
 dist/
