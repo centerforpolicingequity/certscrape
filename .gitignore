@@ -1,6 +1,4 @@
-api.key
-creds.json
-email.json
+*.json
 /certificates/
 *.key
 build/
