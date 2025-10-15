@@ -1,5 +1,7 @@
 # CITI Update Center
-## Current Version: 2.1.1
+## FINAL Version: 2.1.1
+
+**NOTE: With the move to our own CITI platform, certscrape is no longer required to track and maintain CITI certificates. This project has been archived as a result and will no longer be used.**
 
 This Python program scans all PDF files in a provided directory (including subdirectories), specifically for CITI Training Certifications. It can also keep an up-to-date log of all CITI certifications held by current employees and those listed as key personnel on CPE projects. 
 
